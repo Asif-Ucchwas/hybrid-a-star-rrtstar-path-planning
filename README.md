@@ -1,39 +1,39 @@
-# Hybrid A*–RRT* Path Planning for Autonomous Mobile Robots
+# Obstacle Avoidance and Optimal Path Planning for Autonomous Mobile Robots
+### Using Sampling-Based and Graph-Based Algorithms
+
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![ROS2](https://img.shields.io/badge/ROS2-Jazzy-brightgreen)
+![Gazebo](https://img.shields.io/badge/Gazebo-8.11-orange)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
+**Author:** Md Asifuzzaman  
+**Degree:** Master of Engineering Science (MES) — Electrical & Electronics Engineering  
+**University:** Lamar University, Beaumont, TX  
+**Year:** May 2026  
+**Thesis:** [View on ProQuest](https://www.proquest.com/dissertations-theses/obstacle-avoidance-optimal-path-planning/docview/32699575)
+
+---
 
 ## Overview
 
-This project presents a hybrid motion planning framework combining A* and RRT* algorithms. A* is used to generate a global path, while RRT* refines the path within an adaptive corridor to improve efficiency and optimality.
+This repository implements a hybrid motion planning algorithm that combines **A\*** (graph-based) and **RRT\*** (sampling-based) path planners with **Kalman filter state estimation** for autonomous mobile robots navigating in obstacle-dense environments.
 
-## Features
+The hybrid approach achieves a **5.87% path-length improvement** over RRT\* while maintaining a **98% success rate** across 50 simulation trials at three obstacle densities.
 
-* A* global path planning
-* RRT* path refinement
-* Adaptive corridor-guided sampling
-* Occupancy grid-based environment
-* Performance evaluation under different obstacle densities
+---
 
-## Tools & Technologies
+## Key Results
 
-* Python
-* NumPy
-* Matplotlib
-* Google Colab
+| Algorithm | Success Rate | Avg Path Length | Improvement |
+|-----------|-------------|-----------------|-------------|
+| A\*       | 85%         | baseline        | —           |
+| RRT\*     | 60%         | +8.2%           | —           |
+| **Hybrid A\*-RRT\*** | **98%** | **best** | **−5.87% vs RRT\*** |
 
-## Results
+> Tested across 50 simulation trials at obstacle densities: 0.10, 0.20, 0.30
 
-The hybrid method reduces unnecessary exploration and improves convergence compared to standalone A* and RRT* approaches in cluttered environments.
+---
 
-## How to Run
+## Multi-Objective Optimization
 
-```bash
-pip install -r requirements.txt
-python main.py
-```
-
-## Repository Structure
-
-* `src/` – algorithm implementations
-* `maps/` – occupancy grid maps
-* `results/` – performance plots
-* `figures/` – visualization images
-* `notebooks/` – Colab experiments
+The planner minimizes a combined cost index:
