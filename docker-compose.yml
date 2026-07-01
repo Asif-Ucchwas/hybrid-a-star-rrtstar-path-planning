@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  hybrid-planner:
+    build: .
+    container_name: hybrid_astar_rrtstar
+    volumes:
+      - .:/ros2_ws/hybrid-planner
+    environment:
+      - DISPLAY=${DISPLAY}
+      - ROS_DOMAIN_ID=0
+    network_mode: host
+    stdin_open: true
+    tty: true
+    command: /bin/bash
