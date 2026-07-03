@@ -83,9 +83,17 @@ Run the demo (generates comparison figures in src/figures/):
 
 ## ROS2 Integration
 
-Full ROS2/Gazebo integration with TurtleBot3 and Nav2 is in progress.
-The Hybrid planner will be ported into a ROS2 node and connected to
-TurtleBot3 for live simulation testing.
+All three planners (A*, RRT*, and Hybrid) have been ported into ROS2
+nodes and tested live against the nav2_bringup TurtleBot3 simulation,
+using real map data (nav_msgs/OccupancyGrid) and live TF2 localization
+(map -> base_link via AMCL). Each planner runs as an independent node
+with its own topic pair, so all three can run side by side for direct
+comparison. A Kalman filter state estimation node also fuses live
+odometry (constant-velocity model) and publishes a filtered pose
+estimate -- this is new work extending the thesis beyond its original
+scope, built for this ROS2 deployment and the planned journal paper.
+
+See ros2_integration/planner_nodes/ for the full ROS2 package.
 
 Environment: ROS2 Jazzy + Gazebo Harmonic + Ubuntu 24.04
 
