@@ -111,3 +111,9 @@ Environment: ROS2 Jazzy + Gazebo Harmonic + Ubuntu 24.04
 - LinkedIn: https://linkedin.com/in/masifuzzaman
 - GitHub: https://github.com/Asif-Ucchwas
 - Email: asifuzzamanucchwas@gmail.com
+
+## Kalman Filter Validation
+
+![KF Validation](src/figures/fig_kf_validation.png)
+
+Synthetic circular-trajectory validation using the deployed constant-velocity Kalman filter (`ros2_integration/planner_nodes/planner_nodes/kalman_filter.py`), achieving a **39.8% position-error reduction** (RMSE) versus raw noisy measurements. Fully reproducible via `src/validate_kalman_filter.py`.
