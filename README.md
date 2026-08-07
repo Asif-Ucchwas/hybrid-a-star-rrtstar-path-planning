@@ -14,19 +14,22 @@
 
 ---
 
-![A* vs RRT* vs Hybrid comparison](src/figures/comparison.png)
+## What's in this repository
 
-## Overview
+A robot trying to get from one point to another without hitting anything usually relies on one of two families of algorithm: **grid-based search** (like A\*), which is fast and reliable but produces stiff, angular paths, or **random sampling** (like RRT\*), which produces smoother paths but can't always be trusted to find a route at all — especially once the space gets cluttered.
 
-This repository implements a hybrid motion planning algorithm that combines **A*** (graph-based) global planning with an **adaptive-corridor-guided RRT*** (sampling-based) refinement step, for autonomous mobile robots navigating obstacle-dense environments.
+This project builds a **hybrid planner** that gets the best of both: A\* is run first to find a rough global route, and RRT\* is then confined to a corridor around that route rather than left to search the entire map. The corridor automatically widens in cluttered areas and narrows in open space. The result, benchmarked over 50 trials at three obstacle densities, is a planner that keeps A\*-level reliability while producing paths as short as RRT\*'s.
 
-The hybrid approach achieves a **5.87% path-length improvement** over standard RRT* while maintaining a **98% success rate** across 50 simulation trials at three obstacle densities.
-
-A ROS2/Gazebo extension, including real-time state estimation via a Kalman filter, is in active development as a follow-on contribution beyond the original thesis.
+Beyond the algorithm itself, this repository also contains a full **ROS2/Gazebo deployment** of all three planners as live, independently running nodes, plus a **Kalman filter** for cleaning up noisy robot odometry in real time — both built to test whether the algorithm actually holds up outside of an idealized offline simulation.
 
 ---
 
-## Key Results
+## Results at a glance
+
+### How each planner performs (50-trial benchmark, obstacle density 0.20)
+
+![Average path length over 50 trials](paper_figures/fig1_avg_path_length_50trial.png)
+![Success rate over 50 trials](paper_figures/fig2_success_rate_50trial.png)
 
 | Algorithm | Success Rate | Avg Path Length | Avg Time (s) |
 |-----------|--------------|------------------|--------------|
@@ -34,7 +37,16 @@ A ROS2/Gazebo extension, including real-time state estimation via a Kalman filte
 | RRT* (standard) | 60% | 76.48 | 0.0992 |
 | Hybrid A*+Corridor RRT* | 98% | 71.99 (**-5.87% vs RRT\***) | 0.1017 |
 
-Tested across 50 simulation trials at obstacle densities: 0.10, 0.20, 0.30
+The headline result: standalone RRT\* only succeeds 60% of the time, but guiding it with an A\*-derived corridor pushes that up to 98% — while still producing the shortest average paths of the three.
+
+### How that holds up as the environment gets more cluttered
+
+![Path length vs obstacle density](paper_figures/fig3_path_length_vs_density.png)
+![Success rate vs obstacle density](paper_figures/fig4_success_rate_vs_density.png)
+
+At the highest tested obstacle density, standalone RRT\*'s success rate collapses to 40%. The Hybrid planner only drops to 90% over the same range, because the A\* reference path guarantees at least one feasible route always exists inside the corridor.
+
+Full raw numbers behind these charts are in [`paper_figures/tables/`](paper_figures/tables/).
 
 ---
 
@@ -52,13 +64,55 @@ Where:
 
 ---
 
+## Live ROS2 Deployment
+
+All three planners (A*, RRT*, and Hybrid) have been ported into ROS2
+nodes and tested live against the nav2_bringup TurtleBot3 simulation,
+using real map data (nav_msgs/OccupancyGrid) and live TF2 localization
+(map -> base_link via AMCL). Each planner runs as an independent node
+with its own topic pair, so all three can run side by side for direct
+comparison.
+
+![ROS2 deployment architecture](paper_figures/fig5_ros2_architecture.png)
+
+All three planner nodes subscribe to the same map and AMCL-maintained
+localization, but publish to planner-specific topics so they can be
+compared fairly while running simultaneously. See
+[`ros2_integration/planner_nodes/`](ros2_integration/planner_nodes/)
+for the full ROS2 package.
+
+**Environment:** ROS2 Jazzy + Gazebo Harmonic + Ubuntu 24.04
+
+---
+
+## Kalman Filter State Estimation
+
+A constant-velocity Kalman filter node fuses live wheel odometry into a
+smoothed pose and velocity estimate, publishing it as a drop-in
+replacement odometry topic — this is new work extending the thesis
+beyond its original scope.
+
+![Kalman filter validation](paper_figures/fig6_kalman_filter_validation.png)
+
+Validated against a synthetic noisy circular trajectory using the
+actual deployed filter class
+([`ros2_integration/planner_nodes/planner_nodes/kalman_filter.py`](ros2_integration/planner_nodes/planner_nodes/kalman_filter.py)),
+achieving a **39.8% position-error reduction** (RMSE) versus the raw
+noisy measurements. Fully reproducible via
+[`src/validate_kalman_filter.py`](src/validate_kalman_filter.py).
+
+---
+
 ## Repository Structure
 
 - `src/utils.py` — shared grid, geometry, and RRT* core engine
 - `src/hybrid_astar.py` — Hybrid A*+Corridor RRT* planner (this thesis' novel method)
 - `src/rrt_star.py` — standard RRT* baseline algorithm
 - `src/demo.py` — runs all three planners and generates comparison figures
-- `src/figures/` — output plots (e.g. comparison.png above)
+- `src/benchmark_50trials.py` — regenerates the full 50-trial statistical benchmark
+- `src/validate_kalman_filter.py` — regenerates the Kalman filter validation figure
+- `ros2_integration/planner_nodes/` — full ROS2 node package for all three planners + Kalman filter
+- `paper_figures/` — every figure and table shown above, with captions and reproduction notes
 - `docs/architecture.md` — system architecture details
 
 ---
@@ -81,24 +135,6 @@ Run the demo (generates comparison figures in src/figures/):
 
 ---
 
-## ROS2 Integration
-
-All three planners (A*, RRT*, and Hybrid) have been ported into ROS2
-nodes and tested live against the nav2_bringup TurtleBot3 simulation,
-using real map data (nav_msgs/OccupancyGrid) and live TF2 localization
-(map -> base_link via AMCL). Each planner runs as an independent node
-with its own topic pair, so all three can run side by side for direct
-comparison. A Kalman filter state estimation node also fuses live
-odometry (constant-velocity model) and publishes a filtered pose
-estimate -- this is new work extending the thesis beyond its original
-scope, built for this ROS2 deployment and the planned journal paper.
-
-See ros2_integration/planner_nodes/ for the full ROS2 package.
-
-Environment: ROS2 Jazzy + Gazebo Harmonic + Ubuntu 24.04
-
----
-
 ## Related Work
 
 - IoT-Based Fault Detection System, Co-authored paper, IJSRP, July 2023
@@ -111,9 +147,3 @@ Environment: ROS2 Jazzy + Gazebo Harmonic + Ubuntu 24.04
 - LinkedIn: https://linkedin.com/in/masifuzzaman
 - GitHub: https://github.com/Asif-Ucchwas
 - Email: asifuzzamanucchwas@gmail.com
-
-## Kalman Filter Validation
-
-![KF Validation](src/figures/fig_kf_validation.png)
-
-Synthetic circular-trajectory validation using the deployed constant-velocity Kalman filter (`ros2_integration/planner_nodes/planner_nodes/kalman_filter.py`), achieving a **39.8% position-error reduction** (RMSE) versus raw noisy measurements. Fully reproducible via `src/validate_kalman_filter.py`.
