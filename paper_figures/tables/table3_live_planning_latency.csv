@@ -1,0 +1,4 @@
+Planner,Latency
+A* node,< 0.1 s
+RRT* node,1-2 s
+Hybrid node,~12.7 s

@@ -1,0 +1,4 @@
+Metric,A*,RRT*,Hybrid
+Success rate,100%,60%,98%
+Avg. path length (units),72.10,76.48,71.99
+Avg. computation time (s),0.0025,0.0992,0.1017
