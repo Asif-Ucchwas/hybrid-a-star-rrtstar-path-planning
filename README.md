@@ -1,4 +1,7 @@
 # Obstacle Avoidance and Optimal Path Planning for Autonomous Mobile Robots
+
+![banner](assets/banner-hybrid-a-star-rrtstar.png)
+
 ### Using Sampling-Based and Graph-Based Algorithms
 
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
