@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "A*-seeded adaptive-corridor RRT* planner with reproducible benchmarks and ROS2 deployment"
+type: software
+version: 2.0.0-dev
+authors:
+  - family-names: Asifuzzaman
+    given-names: Md
+repository-code: "https://github.com/Asif-Ucchwas/hybrid-a-star-rrtstar-path-planning"
+license: MIT
+keywords:
+  - path planning
+  - RRT*
+  - A*
+  - ROS2
+  - Nav2
