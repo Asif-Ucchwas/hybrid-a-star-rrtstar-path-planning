@@ -1,0 +1,66 @@
+{
+  "name": "decision_rrt",
+  "description": "Sampling-based baselines under the EXACT collision rule (margin 0.05), same maps and seeds as decision.json. Adds RRT*, Informed RRT*, RRT-Connect, BIT*, the thesis planner without fallback (hybrid) and with fallback (hybrid_fallback), and theta_star_tight as the paired reference.",
+  "collision": "exact",
+  "margin": 0.05,
+  "scenarios": [
+    {
+      "id": "random_d0.10",
+      "family": "random",
+      "x": 0.1,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.1
+      },
+      "seeds": 30
+    },
+    {
+      "id": "random_d0.20",
+      "family": "random",
+      "x": 0.2,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.2
+      },
+      "seeds": 30
+    },
+    {
+      "id": "random_d0.30",
+      "family": "random",
+      "x": 0.3,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.3
+      },
+      "seeds": 30
+    },
+    {
+      "id": "narrow",
+      "family": "narrow",
+      "kind": "narrow",
+      "size": 50,
+      "params": {},
+      "seeds": 20
+    },
+    {
+      "id": "maze",
+      "family": "maze",
+      "kind": "maze",
+      "size": 50,
+      "params": {},
+      "seeds": 20
+    }
+  ],
+  "planners": [
+    "theta_star_tight",
+    "hybrid",
+    "hybrid_fallback",
+    "rrt_star",
+    "informed_rrt_star",
+    "rrt_connect",
+    "bit_star"
+  ]
+}
