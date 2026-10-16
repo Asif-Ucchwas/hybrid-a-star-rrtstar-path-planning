@@ -1,0 +1,121 @@
+{
+  "name": "sensitivity",
+  "scenarios": [
+    {
+      "id": "random_d0.20",
+      "family": "random",
+      "x": 0.2,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.2
+      },
+      "seeds": 100
+    },
+    {
+      "id": "random_d0.30",
+      "family": "random",
+      "x": 0.3,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.3
+      },
+      "seeds": 100
+    }
+  ],
+  "planners": [
+    {
+      "id": "hybrid_base_width=1",
+      "spec": "hybrid:base_width=1"
+    },
+    {
+      "id": "hybrid_base_width=2",
+      "spec": "hybrid:base_width=2"
+    },
+    {
+      "id": "hybrid_base_width=3",
+      "spec": "hybrid:base_width=3"
+    },
+    {
+      "id": "hybrid_base_width=4",
+      "spec": "hybrid:base_width=4"
+    },
+    {
+      "id": "hybrid_base_width=6",
+      "spec": "hybrid:base_width=6"
+    },
+    {
+      "id": "hybrid_max_extra=0",
+      "spec": "hybrid:max_extra=0"
+    },
+    {
+      "id": "hybrid_max_extra=2",
+      "spec": "hybrid:max_extra=2"
+    },
+    {
+      "id": "hybrid_max_extra=4",
+      "spec": "hybrid:max_extra=4"
+    },
+    {
+      "id": "hybrid_max_extra=6",
+      "spec": "hybrid:max_extra=6"
+    },
+    {
+      "id": "hybrid_max_extra=8",
+      "spec": "hybrid:max_extra=8"
+    },
+    {
+      "id": "hybrid_max_iterations=600",
+      "spec": "hybrid:max_iterations=600,max_nodes=2500"
+    },
+    {
+      "id": "hybrid_max_iterations=1200",
+      "spec": "hybrid:max_iterations=1200,max_nodes=2500"
+    },
+    {
+      "id": "hybrid_max_iterations=1800",
+      "spec": "hybrid:max_iterations=1800,max_nodes=2500"
+    },
+    {
+      "id": "hybrid_max_iterations=3600",
+      "spec": "hybrid:max_iterations=3600,max_nodes=4300"
+    },
+    {
+      "id": "hybrid_step_size=1",
+      "spec": "hybrid:step_size=1"
+    },
+    {
+      "id": "hybrid_step_size=2",
+      "spec": "hybrid:step_size=2"
+    },
+    {
+      "id": "hybrid_step_size=3",
+      "spec": "hybrid:step_size=3"
+    },
+    {
+      "id": "hybrid_neighbor_radius=2.5",
+      "spec": "hybrid:neighbor_radius=2.5"
+    },
+    {
+      "id": "hybrid_neighbor_radius=3.5",
+      "spec": "hybrid:neighbor_radius=3.5"
+    },
+    {
+      "id": "hybrid_neighbor_radius=5.0",
+      "spec": "hybrid:neighbor_radius=5.0"
+    },
+    {
+      "id": "hybrid_goal_sample_rate=0.05",
+      "spec": "hybrid:goal_sample_rate=0.05"
+    },
+    {
+      "id": "hybrid_goal_sample_rate=0.1",
+      "spec": "hybrid:goal_sample_rate=0.1"
+    },
+    {
+      "id": "hybrid_goal_sample_rate=0.2",
+      "spec": "hybrid:goal_sample_rate=0.2"
+    }
+  ]
+}

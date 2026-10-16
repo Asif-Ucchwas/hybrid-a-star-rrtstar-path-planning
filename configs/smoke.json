@@ -1,0 +1,12 @@
+{
+  "name": "smoke",
+  "scenarios": [
+    {"id": "random_d0.20", "family": "random", "x": 0.20, "kind": "random", "size": 50, "params": {"density": 0.20}, "seeds": 5},
+    {"id": "narrow", "family": "narrow", "kind": "narrow", "size": 50, "params": {}, "seeds": 5},
+    {"id": "maze", "family": "maze", "kind": "maze", "size": 50, "params": {}, "seeds": 5}
+  ],
+  "planners": [
+    "astar", "astar_smooth", "theta_star", "rrt_star", "informed_rrt_star",
+    "rrt_connect", "bit_star", "hybrid", "hybrid_fallback"
+  ]
+}

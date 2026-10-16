@@ -1,0 +1,87 @@
+{
+  "name": "paper_main",
+  "scenarios": [
+    {
+      "id": "random_d0.10",
+      "family": "random",
+      "x": 0.1,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.1
+      },
+      "seeds": 200
+    },
+    {
+      "id": "random_d0.15",
+      "family": "random",
+      "x": 0.15,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.15
+      },
+      "seeds": 200
+    },
+    {
+      "id": "random_d0.20",
+      "family": "random",
+      "x": 0.2,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.2
+      },
+      "seeds": 200
+    },
+    {
+      "id": "random_d0.25",
+      "family": "random",
+      "x": 0.25,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.25
+      },
+      "seeds": 200
+    },
+    {
+      "id": "random_d0.30",
+      "family": "random",
+      "x": 0.3,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.3
+      },
+      "seeds": 200
+    },
+    {
+      "id": "narrow",
+      "family": "narrow",
+      "kind": "narrow",
+      "size": 50,
+      "params": {},
+      "seeds": 200
+    },
+    {
+      "id": "maze",
+      "family": "maze",
+      "kind": "maze",
+      "size": 50,
+      "params": {},
+      "seeds": 100
+    }
+  ],
+  "planners": [
+    "astar",
+    "astar_smooth",
+    "theta_star",
+    "rrt_star",
+    "informed_rrt_star",
+    "rrt_connect",
+    "bit_star",
+    "hybrid",
+    "hybrid_fallback"
+  ]
+}
