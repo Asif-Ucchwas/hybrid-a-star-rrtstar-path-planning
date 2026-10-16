@@ -51,8 +51,12 @@ Map kinds: `random` (density), `narrow` (walls with narrow gaps), `maze`, and
 success (valid path only), planning time (wall and CPU), path length and length
 relative to raw A*, total and mean turning angle (smoothness), mean and minimum
 clearance, number of tree nodes, and whether the A* fallback was used.
-`strict_valid` is 0 when the path clips an obstacle corner that the planners' own
-collision check (one sample per 1/3 cell) did not catch.
+`strict_valid` is 0 when, re-sampled every 0.1 cell, the path enters an obstacle
+cell that the planners' own collision check (one sample per 1/3 cell) did not
+catch. The summary reports the complement as "grazes obstacle cell %". It is a
+diagnostic of corner cutting at a finer resolution, not a safety measure: every
+reported path passes the planners' own check, and it should not be read as a
+collision rate. Use the clearance columns for safety statements.
 
 ## Statistics
 

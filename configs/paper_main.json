@@ -82,6 +82,10 @@
     "rrt_connect",
     "bit_star",
     "hybrid",
-    "hybrid_fallback"
+    "hybrid_fallback",
+    "ompl_rrt_star",
+    "ompl_informed_rrt_star",
+    "ompl_rrt_connect",
+    "ompl_bit_star"
   ]
 }

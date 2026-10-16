@@ -196,7 +196,7 @@ def markdown(summary, comps, meta, ref):
     for sc in sorted({s["scenario"] for s in summary}):
         lines += [f"## {sc}", "",
                   "| planner | n | success % (95% CI) | time ms mean / median / p95 | length | "
-                  "length vs A* | turning deg | clearance | corner-clip free % |",
+                  "length vs A* | turning deg | clearance | grazes obstacle cell % |",
                   "|---|---|---|---|---|---|---|---|---|"]
         for s in [s for s in summary if s["scenario"] == sc]:
             lines.append(
@@ -206,7 +206,7 @@ def markdown(summary, comps, meta, ref):
                 f"{fmt(1000 * s['time_p95'], 1)} | {fmt(s['length'])} "
                 f"[{fmt(s['length_lo'])}, {fmt(s['length_hi'])}] | {fmt(s['len_ratio_vs_astar'], 3)} | "
                 f"{fmt(s['turn_total_deg'], 0)} | {fmt(s['clearance_mean'])} | "
-                f"{fmt(100 * s['strict_valid_rate'], 0)} |")
+                f"{fmt(100 * (1 - s['strict_valid_rate']), 0)} |")
         lines.append("")
         cs = [c for c in comps if c["scenario"] == sc]
         if cs:
