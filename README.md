@@ -19,7 +19,7 @@
 > kept as the git tag `v1.0-thesis` and in [`docs/THESIS_README.md`](docs/THESIS_README.md).
 
 <p align="center">
-  <b>40,780</b> planner runs in total (<b>1,340</b> behind the numbers on this page) &nbsp;·&nbsp; <b>130</b> maps &nbsp;·&nbsp; <b>7</b> planners &nbsp;·&nbsp; <b>2</b> collision rules &nbsp;·&nbsp; every run seeded &nbsp;·&nbsp; <a href="results/RUN_LOG.md">run log</a> &nbsp;·&nbsp; <a href="docs/DEVLOG.md">dev log</a>
+  <b>43,420</b> planner runs in total (<b>3,980</b> behind the numbers on this page) &nbsp;·&nbsp; <b>130</b> maps &nbsp;·&nbsp; <b>7</b> planners &nbsp;·&nbsp; <b>2</b> collision rules &nbsp;·&nbsp; every run seeded &nbsp;·&nbsp; <a href="results/RUN_LOG.md">run log</a> &nbsp;·&nbsp; <a href="docs/DEVLOG.md">dev log</a>
 </p>
 
 ---
@@ -32,6 +32,7 @@
 | ⚖️ | **…but a cheap Theta\* + "pull it tight" step almost matches it** | only 0.4–1.2% shorter; smoother only on the emptiest maps |
 | 🐢 | **Hybrid costs much more time** | 6.5–33.7× the planning time of Theta\* + tighten |
 | 🚫 | **At default settings it often gives up and falls back to A\*** | 40–60% of runs on the densest maps |
+| 🌲 | **Plain RRT\* fails often under the exact rule; the corridor helps at equal budget** | 130 maps solved: RRT\* 49 (74 at 2× budget), Hybrid without fallback 100 (122), Theta\* + tighten 128 |
 | 🧪 | **The old collision check flattered corner-cutting planners** | 73–100% of old-rule paths clipped an obstacle |
 | 🎯 | **Tightened planners are already close to the best possible path** | within 4.5% of the exact shortest path |
 
@@ -163,6 +164,17 @@ When the corridor RRT\* finds no path within its iteration and node limits, the 
 A\* + shortcut smoothing. On dense and maze maps that happens a lot, so the default Hybrid numbers there partly
 describe A\* paths. Doubling the budget removes the fallbacks on random and narrow maps.
 
+### 5. Plain RRT\* at equal budget, under both collision rules
+
+Under the exact rule, plain RRT\* solved **49 of 130 maps (38%)** at the thesis budget (1800 iterations, 2500 nodes)
+and **74 (57%)** at twice the budget. The corridor RRT\* without its A\* fallback solved **100 (77%)** and
+**122 (94%)**; Theta\* + tighten solved **128 (98.5%)**. So the corridor solves more maps than plain RRT\* at equal
+budget (Hybrid ×2 vs RRT\* ×2, McNemar with Holm: maze p = 0.006, narrow 0.031, density 0.20 0.047, density 0.30
+< 0.001), but Theta\* + tighten is still the most reliable. The size of the gap depends on the rule: on the 90
+random maps at 2× budget, RRT\* solves 87 and Hybrid 90 under the old sampled rule, but 57 against 87 under the
+exact rule. Hybrid ×2 takes 0.8–2.0 s per plan against about 0.02 s for Theta\* + tighten. The thesis figures
+(RRT\* 60%, Hybrid 98%) came from a different map set and are not directly comparable.
+
 ---
 
 ## ⚠️ Limits
@@ -170,7 +182,8 @@ describe A\* paths. Doubling the budget removes the fallbacks on random and narr
 > [!IMPORTANT]
 > **Limits.** 50×50 grids; 20–30 maps per scenario; one safety margin (0.05 cell); Hybrid's default
 > settings were tuned under the old collision rule and not re-tuned; timings are Python on one machine; the
-> sampled-rule control covers only random maps. Read the differences as screening evidence and the
+> sampled-rule control covers only random maps; RRT\* is tested at two budgets only, one run per map, and BIT\* is a compact
+> simplified implementation. Read the differences as screening evidence and the
 > magnitudes as the finding.
 
 ---
@@ -188,6 +201,12 @@ python -m benchmarks.runner configs/decision.json --workers 1          # exact r
 python -m benchmarks.runner configs/decision_control.json --workers 1  # old sampled rule, 450 runs
 python -m benchmarks.analyze results/decision --ref theta_star_tight
 python -m benchmarks.analyze results/decision --ref vis_graph          # overwrites summary.md: copy it first
+
+# plain RRT* and the other sampling planners, both rules, two budgets (910 + 630 + 650 + 450 runs)
+python -m benchmarks.runner configs/decision_rrt.json --workers 1
+python -m benchmarks.runner configs/decision_rrt_control.json --workers 1
+python -m benchmarks.runner configs/decision_rrt_budget.json --workers 1
+python -m benchmarks.runner configs/decision_rrt_budget_control.json --workers 1
 
 # the charts in this README (read from results/summaries/)
 python scripts/make_readme_figures.py

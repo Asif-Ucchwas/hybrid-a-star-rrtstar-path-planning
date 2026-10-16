@@ -2,6 +2,17 @@
 
 Newest first. Plain notes on what changed and what we learned. Numbers come from [`results/RUN_LOG.md`](../results/RUN_LOG.md).
 
+## 2026-10-16 (later): plain RRT* under both rules, two budgets
+
+- Added `decision_rrt`, `decision_rrt_control` (default budget) and `decision_rrt_budget`,
+  `decision_rrt_budget_control` (default and 2x budget) configs: 910 + 630 + 650 + 450 runs.
+- Plain RRT\* solves 49/130 maps (38%) under the exact rule at the default budget and 74 (57%) at 2x; the corridor
+  RRT\* without fallback solves 100 (77%) and 122 (94%); Theta\* + tighten 128 (98.5%).
+- The corridor advantage survives equal budget, but its size depends on the collision rule: on the 90 random maps
+  at 2x budget RRT\* 87 vs Hybrid 90 (sampled) against 57 vs 87 (exact).
+- Hybrid at 2x budget takes 0.8-2.0 s per plan against about 0.02 s for Theta\* + tighten.
+- Run sets and commits: 3e6e57f (decision, decision_control), 02591d5 (decision_rrt*), 7ffdcd7 (budget).
+
 ## 2026-10-16: the collision rule decides the ranking
 
 - Added an **exact** collision rule (obstacle cell inflated by a 0.05 margin; touching counts as a collision)

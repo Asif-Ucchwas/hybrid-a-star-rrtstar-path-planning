@@ -8,3 +8,6 @@ dist/
 *.log
 results/*/
 !results/summaries/
+*.log
+results/*/
+!results/summaries/
