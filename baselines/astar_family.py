@@ -29,7 +29,15 @@ class AStarSmooth:
 
 
 class ThetaStar:
-    """Basic Theta* (Daniel et al., 2010): any-angle A* with line-of-sight parents."""
+    """Basic Theta* (Daniel et al., 2010): any-angle A* with line-of-sight parents.
+
+    ``corner_guard=1`` (default) refuses a diagonal step between two diagonal
+    obstacle cells. The repo's A* does not refuse it, so for a like-for-like
+    comparison with A* use ``theta_star:corner_guard=0``.
+    """
+
+    def __init__(self, corner_guard=1):
+        self.corner_guard = bool(int(corner_guard))
 
     def plan(self, start, goal, grid):
         n = grid.shape[0]
@@ -60,7 +68,7 @@ class ThetaStar:
                 if not in_bounds(nb, n) or grid[nb[1], nb[0]] == 1 or nb in closed:
                     continue
                 # Prevent cutting corners between two diagonal obstacles.
-                if dx != 0 and dy != 0:
+                if self.corner_guard and dx != 0 and dy != 0:
                     if grid[s[1], s[0] + dx] == 1 and grid[s[1] + dy, s[0]] == 1:
                         continue
                 p = parent[s]

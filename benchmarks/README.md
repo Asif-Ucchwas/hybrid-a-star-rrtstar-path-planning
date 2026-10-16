@@ -31,7 +31,8 @@ continues from the last finished run.
 |---|---|
 | `astar` | plain 8-connected A* (the thesis baseline) |
 | `astar_smooth` | A* + the same random-shortcut smoothing RRT* paths get |
-| `theta_star` | Theta* (any-angle A*) |
+| `theta_star` | Theta* (any-angle A*), refuses diagonal steps between two diagonal obstacles |
+| `theta_star_cc` | Theta* with the same movement rules as `astar` (`theta_star:corner_guard=0`) |
 | `rrt_star` | RRT* (the thesis baseline, `planner_core.RRTStar`) |
 | `informed_rrt_star` | Informed RRT* |
 | `rrt_connect` | RRT-Connect (not optimal) |

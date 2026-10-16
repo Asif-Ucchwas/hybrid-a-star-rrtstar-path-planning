@@ -86,6 +86,10 @@
     "ompl_rrt_star",
     "ompl_informed_rrt_star",
     "ompl_rrt_connect",
-    "ompl_bit_star"
+    "ompl_bit_star",
+    {
+      "id": "theta_star_cc",
+      "spec": "theta_star:corner_guard=0"
+    }
   ]
 }
