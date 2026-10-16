@@ -4,7 +4,7 @@ Author: Md Asifuzzaman
 
 Purpose: Regenerate the KF position-error-reduction validation figure and
 number, reproducibly, using the actual KalmanFilter implementation deployed
-in the ROS2 node (ros2_integration/planner_nodes/planner_nodes/kalman_filter.py).
+in the ROS2 node (planner_core/kalman_filter.py).
 
 Ground-truth trajectory: circular path, matching the paper's live simulation
 validation setup (~0.19 m/s tangential speed).
@@ -26,12 +26,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.insert(
-    0,
-    os.path.join(os.path.dirname(__file__), "..", "ros2_integration",
-                  "planner_nodes", "planner_nodes")
-)
-from kalman_filter import KalmanFilter  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from planner_core.kalman_filter import KalmanFilter  # noqa: E402
 
 SEED = 42
 rng = np.random.default_rng(SEED)

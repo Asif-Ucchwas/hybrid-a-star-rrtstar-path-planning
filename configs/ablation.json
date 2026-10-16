@@ -1,0 +1,56 @@
+{
+  "name": "ablation",
+  "scenarios": [
+    {
+      "id": "random_d0.20",
+      "family": "random",
+      "x": 0.2,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.2
+      },
+      "seeds": 200
+    },
+    {
+      "id": "random_d0.30",
+      "family": "random",
+      "x": 0.3,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.3
+      },
+      "seeds": 200
+    },
+    {
+      "id": "narrow",
+      "family": "narrow",
+      "kind": "narrow",
+      "size": 50,
+      "params": {},
+      "seeds": 200
+    }
+  ],
+  "planners": [
+    "astar_smooth",
+    "rrt_star",
+    "hybrid",
+    {
+      "id": "hybrid_fixed_w2",
+      "spec": "hybrid:base_width=2,max_extra=0"
+    },
+    {
+      "id": "hybrid_fixed_w4",
+      "spec": "hybrid:base_width=4,max_extra=0"
+    },
+    {
+      "id": "hybrid_fixed_w6",
+      "spec": "hybrid:base_width=6,max_extra=0"
+    },
+    {
+      "id": "hybrid_fixed_w8",
+      "spec": "hybrid:base_width=8,max_extra=0"
+    }
+  ]
+}

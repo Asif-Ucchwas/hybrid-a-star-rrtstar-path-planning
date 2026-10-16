@@ -1,19 +1,11 @@
-# Kalman Filter State Estimation
-# Author: Md Asifuzzaman
-# Thesis: Obstacle Avoidance and Optimal Path Planning for Autonomous Mobile Robots
-#         Using Sampling-Based and Graph-Based Algorithms
-# Lamar University, MES EEE, May 2026
-#
-# Used for robot pose estimation in hybrid planner pipeline
+"""Compatibility shim: the implementation now lives in ``planner_core``.
 
-class KalmanFilter:
-    def __init__(self):
-        pass
+Kept so existing scripts (``python src/demo.py``, ``scripts/run_simulation.py``)
+keep working. Do not add code here.
+"""
+import os
+import sys
 
-    def predict(self, state, control):
-        """Prediction step"""
-        pass
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    def update(self, measurement):
-        """Update step"""
-        pass
+from planner_core.kalman_filter import *  # noqa: F401,F403,E402

@@ -1,0 +1,86 @@
+{
+  "name": "decision",
+  "description": "Decision run under the EXACT collision rule with a 0.05-cell safety margin: a path may not touch or enter any obstacle cell, and may not squeeze through the zero-width gap between diagonally touching obstacles. All planners are checked by the same rule (A* and Theta* use the standard diagonal rule). 50x50 maps: random at three densities (30 maps each), narrow and maze (20 each). hybrid_tight_x2 has twice the iteration and node budget. vis_graph is the exact shortest path through obstacle corners (a reference; not run on mazes, where it is slow). Map seeds 0-29 are shared with decision_control.json.",
+  "collision": "exact",
+  "margin": 0.05,
+  "scenarios": [
+    {
+      "id": "random_d0.10",
+      "family": "random",
+      "x": 0.1,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.1
+      },
+      "seeds": 30
+    },
+    {
+      "id": "random_d0.20",
+      "family": "random",
+      "x": 0.2,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.2
+      },
+      "seeds": 30
+    },
+    {
+      "id": "random_d0.30",
+      "family": "random",
+      "x": 0.3,
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.3
+      },
+      "seeds": 30
+    },
+    {
+      "id": "narrow",
+      "family": "narrow",
+      "kind": "narrow",
+      "size": 50,
+      "params": {},
+      "seeds": 20
+    },
+    {
+      "id": "maze",
+      "family": "maze",
+      "kind": "maze",
+      "size": 50,
+      "params": {},
+      "seeds": 20,
+      "planners": [
+        "astar_smooth",
+        {
+          "id": "theta_star_cc",
+          "spec": "theta_star:corner_guard=0"
+        },
+        "theta_star_tight",
+        "hybrid_fallback",
+        "hybrid_tight",
+        {
+          "id": "hybrid_tight_x2",
+          "spec": "hybrid_tight:max_iterations=3600,max_nodes=5000"
+        }
+      ]
+    }
+  ],
+  "planners": [
+    "astar_smooth",
+    {
+      "id": "theta_star_cc",
+      "spec": "theta_star:corner_guard=0"
+    },
+    "theta_star_tight",
+    "hybrid_fallback",
+    "hybrid_tight",
+    {
+      "id": "hybrid_tight_x2",
+      "spec": "hybrid_tight:max_iterations=3600,max_nodes=5000"
+    },
+    "vis_graph"
+  ]
+}

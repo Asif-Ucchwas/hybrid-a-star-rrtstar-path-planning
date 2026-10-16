@@ -1,0 +1,435 @@
+"""
+Shared utilities for path planning algorithms.
+
+Source: extracted and cleaned up from the original Colab research
+notebook (A_vsRRT_vsHYBRID) used for the thesis:
+"Obstacle Avoidance and Optimal Path Planning for Autonomous Mobile
+Robots Using Sampling-Based and Graph-Based Algorithms"
+Md Asifuzzaman, Lamar University, MES EEE, May 2026
+"""
+
+import math
+import random
+import heapq
+import numpy as np
+
+
+# -----------------------------
+# Geometry / grid helpers
+# -----------------------------
+def euclidean(a, b):
+    return math.hypot(a[0] - b[0], a[1] - b[1])
+
+
+def path_length(path):
+    if path is None or len(path) < 2:
+        return float("inf")
+    return sum(euclidean(path[i], path[i + 1]) for i in range(len(path) - 1))
+
+
+def in_bounds(p, n):
+    x, y = p
+    return 0 <= x < n and 0 <= y < n
+
+
+def make_grid(size=50, obstacle_prob=0.20, seed=0, border_free=True):
+    """Generate a random occupancy grid (0 = free, 1 = obstacle)."""
+    rng = np.random.default_rng(seed)
+    grid = (rng.random((size, size)) < obstacle_prob).astype(np.uint8)
+    if border_free:
+        grid[0, :] = 0
+        grid[-1, :] = 0
+        grid[:, 0] = 0
+        grid[:, -1] = 0
+    return grid
+
+
+def set_start_goal_free(grid, start, goal):
+    grid[start[1], start[0]] = 0
+    grid[goal[1], goal[0]] = 0
+
+
+_T_CACHE = {}
+
+
+def _t_samples(n):
+    """The n sample positions of ``np.linspace(0, 1, n)`` as plain floats."""
+    t = _T_CACHE.get(n)
+    if t is None:
+        t = _T_CACHE[n] = tuple(float(v) for v in np.linspace(0, 1, n))
+    return t
+
+
+_COLLISION_MODE = "sampled"
+_COLLISION_MARGIN = 0.0
+
+
+def set_collision_mode(mode, margin=0.0):
+    """Choose the segment collision test used by every planner and by path validation.
+
+    ``"sampled"`` (default, the thesis rule): 3 sample points per cell, each
+    rounded to a cell. It can miss an obstacle corner between two samples, so a
+    path may cut up to about a quarter cell into an obstacle.
+    ``"exact"``: the segment may not enter any obstacle cell (cell (x, y) is the
+    unit square centred on (x, y)). With ``margin=0`` touching an edge or corner
+    is allowed; with ``margin > 0`` every obstacle square is inflated by
+    ``margin`` on each side (a small square robot of half-width ``margin``), so
+    touching a corner or squeezing through the zero-width gap between two
+    diagonally touching obstacles counts as a collision. The path must also keep
+    ``margin`` away from the map border. ``margin`` must be below 0.5.
+    """
+    global _COLLISION_MODE, _COLLISION_MARGIN
+    if mode not in ("sampled", "exact"):
+        raise ValueError(f"collision mode must be 'sampled' or 'exact', got {mode!r}")
+    margin = float(margin)
+    if not 0.0 <= margin < 0.5:
+        raise ValueError(f"margin must be in [0, 0.5), got {margin}")
+    if mode == "sampled" and margin != 0.0:
+        raise ValueError("margin needs mode='exact'")
+    _COLLISION_MODE = mode
+    _COLLISION_MARGIN = margin
+
+
+def get_collision_mode():
+    return _COLLISION_MODE
+
+
+def get_collision_margin():
+    return _COLLISION_MARGIN
+
+
+def _segment_free_exact(p1, p2, grid):
+    """Exact test: True if the segment (inflated by the margin) never meets an obstacle cell.
+
+    Cell (x, y) is the unit square centred on (x, y). In shifted coordinates
+    u = x + 0.5, v = y + 0.5 it is [i, i+1) x [j, j+1). The segment is cut where
+    it crosses a cell border (or a border moved by the margin); the middle of
+    each piece lies strictly inside one cell, which, together with the
+    neighbours the margin reaches, is looked up. With ``margin=0`` a piece that
+    runs along a border only touches the cells beside it and is skipped.
+    """
+    m = _COLLISION_MARGIN
+    n = grid.shape[0]
+    u1, v1 = p1[0] + 0.5, p1[1] + 0.5
+    u2, v2 = p2[0] + 0.5, p2[1] + 0.5
+    if min(u1, v1, u2, v2) < m or max(u1, v1, u2, v2) > n - m:
+        return False
+    du, dv = u2 - u1, v2 - v1
+    ts = [0.0, 1.0]
+    for a1, d, lo_hi in ((u1, du, (u1, u2)), (v1, dv, (v1, v2))):
+        if d == 0.0:
+            continue
+        lo, hi = lo_hi if d > 0 else (lo_hi[1], lo_hi[0])
+        if m > 0.0:
+            for k in range(math.floor(lo - m), math.ceil(hi + m) + 1):
+                for w in (k - m, k + m):
+                    if lo < w < hi:
+                        ts.append((w - a1) / d)
+        else:
+            for k in range(math.floor(lo) + 1, math.ceil(hi)):
+                ts.append((k - a1) / d)
+    ts.sort()
+    item = grid.item
+    for a, b in zip(ts, ts[1:]):
+        if b - a <= 1e-12:
+            continue
+        tm = 0.5 * (a + b)
+        um, vm = u1 + tm * du, v1 + tm * dv
+        i, j = math.floor(um), math.floor(vm)
+        if m == 0.0:
+            if um == i or vm == j:
+                continue
+            if i < 0 or j < 0 or i >= n or j >= n:
+                return False
+            if item(j, i) == 1:
+                return False
+            continue
+        cols = [i]
+        if um - i < m:
+            cols.append(i - 1)
+        if i + 1 - um < m:
+            cols.append(i + 1)
+        rows = [j]
+        if vm - j < m:
+            rows.append(j - 1)
+        if j + 1 - vm < m:
+            rows.append(j + 1)
+        for jj in rows:
+            if jj < 0 or jj >= n:
+                continue
+            for ii in cols:
+                if 0 <= ii < n and item(jj, ii) == 1:
+                    return False
+    return True
+
+
+def line_collision_free(p1, p2, grid):
+    """Check collision along a line segment (rule chosen by ``set_collision_mode``).
+
+    Default ``"sampled"``: samples 3 points per cell (at least 2) and rounds each
+    to the nearest cell. Same sample points and same rounding as the original
+    NumPy-based loop, only with the per-call overhead removed, so results are
+    unchanged. ``"exact"`` uses :func:`_segment_free_exact`.
+    """
+    if _COLLISION_MODE == "exact":
+        return _segment_free_exact(p1, p2, grid)
+    x1, y1 = p1[0], p1[1]
+    dx, dy = p2[0] - x1, p2[1] - y1
+    n = max(int(math.hypot(dx, dy) * 3), 2)
+    n_side = grid.shape[0]
+    item = grid.item
+    for t in _t_samples(n):
+        xi = round(x1 + t * dx)
+        yi = round(y1 + t * dy)
+        if xi < 0 or yi < 0 or xi >= n_side or yi >= n_side:
+            return False
+        if item(yi, xi) == 1:
+            return False
+    return True
+
+
+def shortcut_path(path, grid, attempts=120):
+    """Simple path smoothing / shortcutting."""
+    if path is None or len(path) < 3:
+        return path
+    path = list(path)
+    for _ in range(attempts):
+        if len(path) < 3:
+            break
+        i = random.randint(0, len(path) - 3)
+        j = random.randint(i + 2, len(path) - 1)
+        if line_collision_free(path[i], path[j], grid):
+            path = path[:i + 1] + path[j:]
+    return path
+
+
+# -----------------------------
+# A* implementation
+# -----------------------------
+def astar(grid, start, goal):
+    """A* on an 8-connected grid. start, goal are integer (x, y) tuples."""
+    n = grid.shape[0]
+    moves = [(-1, 0), (1, 0), (0, -1), (0, 1),
+             (-1, -1), (-1, 1), (1, -1), (1, 1)]
+    strict = _COLLISION_MARGIN > 0.0   # with a margin, a diagonal needs both side cells free
+
+    def heuristic(a, b):
+        return euclidean(a, b)
+
+    open_heap = [(0, start)]
+    came_from = {}
+    g_score = {start: 0.0}
+    visited = set()
+
+    while open_heap:
+        _, current = heapq.heappop(open_heap)
+        if current in visited:
+            continue
+        visited.add(current)
+
+        if current == goal:
+            path = [current]
+            while current in came_from:
+                current = came_from[current]
+                path.append(current)
+            path.reverse()
+            return path
+
+        for dx, dy in moves:
+            nx, ny = current[0] + dx, current[1] + dy
+            neighbor = (nx, ny)
+            if not in_bounds(neighbor, n):
+                continue
+            if grid[ny, nx] == 1:
+                continue
+            if strict and dx and dy and (grid[current[1], nx] == 1 or grid[ny, current[0]] == 1):
+                continue
+
+            step_cost = math.sqrt(2) if dx != 0 and dy != 0 else 1.0
+            tentative_g = g_score[current] + step_cost
+
+            if tentative_g < g_score.get(neighbor, float("inf")):
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g
+                f_score = tentative_g + heuristic(neighbor, goal)
+                heapq.heappush(open_heap, (f_score, neighbor))
+
+    return None
+
+
+# -----------------------------
+# Adaptive corridor (Hybrid method)
+# -----------------------------
+def local_obstacle_density(grid, x, y, radius=3):
+    n = grid.shape[0]
+    x0, x1 = max(0, x - radius), min(n, x + radius + 1)
+    y0, y1 = max(0, y - radius), min(n, y + radius + 1)
+    window = grid[y0:y1, x0:x1]
+    return float(np.mean(window))
+
+
+def build_adaptive_corridor(astar_path, grid, base_width=2.0, max_extra=4.0):
+    """
+    Assign a corridor width for each A* path point based on local
+    obstacle density. Open region -> narrow corridor, dense region ->
+    wider corridor. This is the core novelty of the Hybrid method.
+    """
+    corridor = []
+    for (x, y) in astar_path:
+        density = local_obstacle_density(grid, x, y, radius=3)
+        width = base_width + max_extra * density
+        corridor.append(((float(x), float(y)), float(width)))
+    return corridor
+
+
+def sample_from_corridor(grid, corridor, goal=None, goal_sample_rate=0.10):
+    """Sample mainly near the A* path corridor; occasionally sample goal."""
+    if goal is not None and random.random() < goal_sample_rate:
+        return (float(goal[0]), float(goal[1]))
+
+    for _ in range(100):
+        center, radius = random.choice(corridor)
+        angle = random.uniform(0, 2 * math.pi)
+        r = random.uniform(0, radius)
+        x = center[0] + r * math.cos(angle)
+        y = center[1] + r * math.sin(angle)
+        xi, yi = int(round(x)), int(round(y))
+        if in_bounds((xi, yi), grid.shape[0]) and grid[yi, xi] == 0:
+            return (x, y)
+
+    return sample_uniform_free(grid, goal=goal, goal_sample_rate=0.0)
+
+
+def sample_uniform_free(grid, goal=None, goal_sample_rate=0.08):
+    """Sample uniformly across the whole free space (standard RRT*)."""
+    if goal is not None and random.random() < goal_sample_rate:
+        return (float(goal[0]), float(goal[1]))
+
+    n = grid.shape[0]
+    for _ in range(200):
+        x = random.uniform(0, n - 1)
+        y = random.uniform(0, n - 1)
+        xi, yi = int(round(x)), int(round(y))
+        if in_bounds((xi, yi), n) and grid[yi, xi] == 0:
+            return (x, y)
+    return (0.0, 0.0)
+
+
+# -----------------------------
+# RRT* core (shared by standard + corridor-guided variants)
+# -----------------------------
+class Node:
+    def __init__(self, x, y, parent=None, cost=0.0):
+        self.x = float(x)
+        self.y = float(y)
+        self.parent = parent
+        self.cost = float(cost)
+
+    def point(self):
+        return (self.x, self.y)
+
+
+def nearest_node(nodes, pt):
+    dists = [(euclidean(node.point(), pt), i) for i, node in enumerate(nodes)]
+    return min(dists, key=lambda x: x[0])[1]
+
+
+def steer(from_pt, to_pt, step_size):
+    d = euclidean(from_pt, to_pt)
+    if d <= step_size:
+        return to_pt
+    theta = math.atan2(to_pt[1] - from_pt[1], to_pt[0] - from_pt[0])
+    return (from_pt[0] + step_size * math.cos(theta),
+            from_pt[1] + step_size * math.sin(theta))
+
+
+def near_nodes(nodes, pt, radius):
+    return [i for i, node in enumerate(nodes) if euclidean(node.point(), pt) <= radius]
+
+
+def backtrack_path(nodes, goal_idx):
+    path = []
+    idx = goal_idx
+    while idx is not None:
+        path.append(nodes[idx].point())
+        idx = nodes[idx].parent
+    path.reverse()
+    return path
+
+
+def rrt_star_generic(grid, start, goal, sampler_fn, sampler_args=None,
+                      max_iterations=1800, step_size=2.0, neighbor_radius=3.5,
+                      goal_threshold=2.0, max_nodes=2500):
+    """
+    Generic RRT* engine. The `sampler_fn` determines the sampling
+    strategy: uniform-free -> standard RRT*, corridor-guided -> Hybrid.
+    """
+    if sampler_args is None:
+        sampler_args = {}
+
+    nodes = [Node(start[0], start[1], parent=None, cost=0.0)]
+    # Coordinates mirrored in NumPy arrays so nearest / neighbour searches are
+    # vectorised. Same results as scanning ``nodes`` one by one.
+    cap = max_nodes + max_iterations + 8
+    xs = np.empty(cap)
+    ys = np.empty(cap)
+    xs[0], ys[0] = nodes[0].x, nodes[0].y
+    best_goal_idx = None
+    best_goal_cost = float("inf")
+
+    for _ in range(max_iterations):
+        if len(nodes) >= max_nodes:
+            break
+
+        rnd = sampler_fn(**sampler_args)
+        d_all = np.hypot(xs[:len(nodes)] - rnd[0], ys[:len(nodes)] - rnd[1])
+        nearest_idx = int(d_all.argmin())
+        nearest_pt = nodes[nearest_idx].point()
+        new_pt = steer(nearest_pt, rnd, step_size)
+
+        xi, yi = int(round(new_pt[0])), int(round(new_pt[1]))
+        if not in_bounds((xi, yi), grid.shape[0]):
+            continue
+        if grid[yi, xi] == 1:
+            continue
+        if not line_collision_free(nearest_pt, new_pt, grid):
+            continue
+
+        d_new = np.hypot(xs[:len(nodes)] - new_pt[0], ys[:len(nodes)] - new_pt[1])
+        near_idxs = np.flatnonzero(d_new <= neighbor_radius).tolist()
+
+        best_parent = nearest_idx
+        best_cost = nodes[nearest_idx].cost + euclidean(nearest_pt, new_pt)
+        for idx in near_idxs:
+            cand_pt = nodes[idx].point()
+            if line_collision_free(cand_pt, new_pt, grid):
+                cand_cost = nodes[idx].cost + euclidean(cand_pt, new_pt)
+                if cand_cost < best_cost:
+                    best_cost, best_parent = cand_cost, idx
+
+        new_node = Node(new_pt[0], new_pt[1], parent=best_parent, cost=best_cost)
+        nodes.append(new_node)
+        new_idx = len(nodes) - 1
+        xs[new_idx], ys[new_idx] = new_node.x, new_node.y
+
+        for idx in near_idxs:
+            node_pt = nodes[idx].point()
+            new_cost = new_node.cost + euclidean(new_pt, node_pt)
+            if new_cost < nodes[idx].cost and line_collision_free(new_pt, node_pt, grid):
+                nodes[idx].parent = new_idx
+                nodes[idx].cost = new_cost
+
+        if euclidean(new_pt, goal) <= goal_threshold and line_collision_free(new_pt, goal, grid):
+            goal_cost = new_node.cost + euclidean(new_pt, goal)
+            nodes.append(Node(goal[0], goal[1], parent=new_idx, cost=goal_cost))
+            goal_idx = len(nodes) - 1
+            xs[goal_idx], ys[goal_idx] = float(goal[0]), float(goal[1])
+            if goal_cost < best_goal_cost:
+                best_goal_cost, best_goal_idx = goal_cost, goal_idx
+
+    if best_goal_idx is None:
+        return None, nodes
+
+    path = backtrack_path(nodes, best_goal_idx)
+    path = shortcut_path(path, grid, attempts=150)
+    return path, nodes
