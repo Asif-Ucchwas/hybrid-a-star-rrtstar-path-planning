@@ -60,13 +60,119 @@ def _t_samples(n):
     return t
 
 
-def line_collision_free(p1, p2, grid):
-    """Check collision along a line segment using interpolation.
+_COLLISION_MODE = "sampled"
+_COLLISION_MARGIN = 0.0
 
-    Samples 3 points per cell (at least 2) and rounds each to the nearest
-    cell. Same sample points and same rounding as the original NumPy-based
-    loop, only with the per-call overhead removed, so results are unchanged.
+
+def set_collision_mode(mode, margin=0.0):
+    """Choose the segment collision test used by every planner and by path validation.
+
+    ``"sampled"`` (default, the thesis rule): 3 sample points per cell, each
+    rounded to a cell. It can miss an obstacle corner between two samples, so a
+    path may cut up to about a quarter cell into an obstacle.
+    ``"exact"``: the segment may not enter any obstacle cell (cell (x, y) is the
+    unit square centred on (x, y)). With ``margin=0`` touching an edge or corner
+    is allowed; with ``margin > 0`` every obstacle square is inflated by
+    ``margin`` on each side (a small square robot of half-width ``margin``), so
+    touching a corner or squeezing through the zero-width gap between two
+    diagonally touching obstacles counts as a collision. The path must also keep
+    ``margin`` away from the map border. ``margin`` must be below 0.5.
     """
+    global _COLLISION_MODE, _COLLISION_MARGIN
+    if mode not in ("sampled", "exact"):
+        raise ValueError(f"collision mode must be 'sampled' or 'exact', got {mode!r}")
+    margin = float(margin)
+    if not 0.0 <= margin < 0.5:
+        raise ValueError(f"margin must be in [0, 0.5), got {margin}")
+    if mode == "sampled" and margin != 0.0:
+        raise ValueError("margin needs mode='exact'")
+    _COLLISION_MODE = mode
+    _COLLISION_MARGIN = margin
+
+
+def get_collision_mode():
+    return _COLLISION_MODE
+
+
+def get_collision_margin():
+    return _COLLISION_MARGIN
+
+
+def _segment_free_exact(p1, p2, grid):
+    """Exact test: True if the segment (inflated by the margin) never meets an obstacle cell.
+
+    Cell (x, y) is the unit square centred on (x, y). In shifted coordinates
+    u = x + 0.5, v = y + 0.5 it is [i, i+1) x [j, j+1). The segment is cut where
+    it crosses a cell border (or a border moved by the margin); the middle of
+    each piece lies strictly inside one cell, which, together with the
+    neighbours the margin reaches, is looked up. With ``margin=0`` a piece that
+    runs along a border only touches the cells beside it and is skipped.
+    """
+    m = _COLLISION_MARGIN
+    n = grid.shape[0]
+    u1, v1 = p1[0] + 0.5, p1[1] + 0.5
+    u2, v2 = p2[0] + 0.5, p2[1] + 0.5
+    if min(u1, v1, u2, v2) < m or max(u1, v1, u2, v2) > n - m:
+        return False
+    du, dv = u2 - u1, v2 - v1
+    ts = [0.0, 1.0]
+    for a1, d, lo_hi in ((u1, du, (u1, u2)), (v1, dv, (v1, v2))):
+        if d == 0.0:
+            continue
+        lo, hi = lo_hi if d > 0 else (lo_hi[1], lo_hi[0])
+        if m > 0.0:
+            for k in range(math.floor(lo - m), math.ceil(hi + m) + 1):
+                for w in (k - m, k + m):
+                    if lo < w < hi:
+                        ts.append((w - a1) / d)
+        else:
+            for k in range(math.floor(lo) + 1, math.ceil(hi)):
+                ts.append((k - a1) / d)
+    ts.sort()
+    item = grid.item
+    for a, b in zip(ts, ts[1:]):
+        if b - a <= 1e-12:
+            continue
+        tm = 0.5 * (a + b)
+        um, vm = u1 + tm * du, v1 + tm * dv
+        i, j = math.floor(um), math.floor(vm)
+        if m == 0.0:
+            if um == i or vm == j:
+                continue
+            if i < 0 or j < 0 or i >= n or j >= n:
+                return False
+            if item(j, i) == 1:
+                return False
+            continue
+        cols = [i]
+        if um - i < m:
+            cols.append(i - 1)
+        if i + 1 - um < m:
+            cols.append(i + 1)
+        rows = [j]
+        if vm - j < m:
+            rows.append(j - 1)
+        if j + 1 - vm < m:
+            rows.append(j + 1)
+        for jj in rows:
+            if jj < 0 or jj >= n:
+                continue
+            for ii in cols:
+                if 0 <= ii < n and item(jj, ii) == 1:
+                    return False
+    return True
+
+
+def line_collision_free(p1, p2, grid):
+    """Check collision along a line segment (rule chosen by ``set_collision_mode``).
+
+    Default ``"sampled"``: samples 3 points per cell (at least 2) and rounds each
+    to the nearest cell. Same sample points and same rounding as the original
+    NumPy-based loop, only with the per-call overhead removed, so results are
+    unchanged. ``"exact"`` uses :func:`_segment_free_exact`.
+    """
+    if _COLLISION_MODE == "exact":
+        return _segment_free_exact(p1, p2, grid)
     x1, y1 = p1[0], p1[1]
     dx, dy = p2[0] - x1, p2[1] - y1
     n = max(int(math.hypot(dx, dy) * 3), 2)
@@ -105,6 +211,7 @@ def astar(grid, start, goal):
     n = grid.shape[0]
     moves = [(-1, 0), (1, 0), (0, -1), (0, 1),
              (-1, -1), (-1, 1), (1, -1), (1, 1)]
+    strict = _COLLISION_MARGIN > 0.0   # with a margin, a diagonal needs both side cells free
 
     def heuristic(a, b):
         return euclidean(a, b)
@@ -134,6 +241,8 @@ def astar(grid, start, goal):
             if not in_bounds(neighbor, n):
                 continue
             if grid[ny, nx] == 1:
+                continue
+            if strict and dx and dy and (grid[current[1], nx] == 1 or grid[ny, current[0]] == 1):
                 continue
 
             step_cost = math.sqrt(2) if dx != 0 and dy != 0 else 1.0

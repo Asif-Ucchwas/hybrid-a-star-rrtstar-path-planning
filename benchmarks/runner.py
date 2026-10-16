@@ -30,7 +30,7 @@ import numpy as np
 from benchmarks.maps import make_map
 from benchmarks.metrics import clearance_map, evaluate_path, path_is_valid
 from benchmarks.planners import make_planner, planner_nodes
-from planner_core.utils import astar, path_length
+from planner_core.utils import astar, path_length, set_collision_mode
 
 FIELDS = [
     "scenario", "family", "x", "seed", "planner", "success", "valid", "time_s", "cpu_s",
@@ -80,6 +80,7 @@ _CFG = None
 def _init_worker(cfg):
     global _CFG
     _CFG = cfg
+    set_collision_mode(cfg.get("collision", "sampled"), cfg.get("margin", 0.0))
 
 
 def run_task(task):
@@ -172,6 +173,8 @@ def main(argv=None):
         "cpu": cpu_model(),
         "cpu_count": os.cpu_count(),
         "workers": args.workers,
+        "collision": cfg.get("collision", "sampled"),
+        "margin": cfg.get("margin", 0.0),
         "git_commit": git_commit(),
         "clean_timing": args.workers == 1,
     }

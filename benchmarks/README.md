@@ -37,6 +37,7 @@ continues from the last finished run.
 | `astar_tight` | A* + deterministic path tightening (prune to line of sight, then slide waypoints taut) |
 | `theta_star_tight` | Theta* (A* movement rules) + the same deterministic tightening |
 | `hybrid_tight` | `hybrid_fallback` + the same deterministic tightening |
+| `vis_graph` | exact shortest path through obstacle corners (a length reference, not a contender; slow on big or cluttered maps) |
 | `rrt_star` | RRT* (the thesis baseline, `planner_core.RRTStar`) |
 | `informed_rrt_star` | Informed RRT* |
 | `rrt_connect` | RRT-Connect (not optimal) |
@@ -49,6 +50,25 @@ post-processing of a graph-search path (or of the hybrid path) give the same
 smoothness as the sampling stage? Tightened paths hug obstacle corners, so expect
 lower clearance than their inputs. `configs/paper_smoothing.json` runs them on the
 same 1,300 maps as `paper_main`.
+
+## Collision rule
+
+`"collision"` in a config picks how every planner and the validity check test a
+segment against obstacles:
+
+* `"sampled"` (default, the thesis rule): 3 sample points per cell. It can miss an
+  obstacle corner between samples, so paths can cut up to about a quarter cell into
+  an obstacle, and planners that smooth aggressively (tightening, RRT* shortcuts)
+  profit from it unevenly.
+* `"exact"`: the segment may not enter an obstacle cell. Add `"margin": 0.05` to
+  inflate obstacles by a small robot half-width; then touching a corner and passing
+  through the zero-width gap between two diagonally touching obstacles both count as
+  collisions, and A*/Theta* use the standard rule that a diagonal step needs both
+  side cells free. Use a margin: without it a sampling planner cannot use the
+  zero-width gaps that A* paths often rely on.
+
+`configs/decision.json` (exact, margin 0.05) and `configs/decision_control.json`
+(sampled) run the same maps under both rules.
 
 Planner specs in a config can set parameters: `"hybrid:base_width=2,max_extra=0"`
 is a *fixed* 2-cell corridor (the ablation), `"hybrid:max_iterations=600"` changes

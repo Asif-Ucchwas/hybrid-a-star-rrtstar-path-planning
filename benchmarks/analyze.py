@@ -191,6 +191,8 @@ def markdown(summary, comps, meta, ref):
         lines += [f"- config: `{meta.get('config_file')}`  commit: `{meta.get('git_commit')}`",
                   f"- machine: {meta.get('cpu')} ({meta.get('cpu_count')} cores), "
                   f"Python {meta.get('python')}, workers={meta.get('workers')}",
+                  f"- collision rule: **{meta.get('collision', 'sampled')}**"
+                  + (f", margin {meta['margin']}" if meta.get('margin') else ""),
                   f"- clean timing: **{meta.get('clean_timing')}** "
                   "(timings are only publishable when workers=1 on an idle machine)", ""]
     for sc in sorted({s["scenario"] for s in summary}):

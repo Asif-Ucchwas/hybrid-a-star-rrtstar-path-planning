@@ -6,6 +6,7 @@ from baselines.smoothing import tighten_path
 from planner_core.utils import (
     astar,
     euclidean,
+    get_collision_margin,
     in_bounds,
     line_collision_free,
     shortcut_path,
@@ -47,6 +48,7 @@ class ThetaStar:
         start = tuple(start)
         goal = tuple(goal)
 
+        strict = get_collision_margin() > 0.0   # with a margin, a diagonal needs both side cells free
         g = {start: 0.0}
         parent = {start: start}
         open_heap = [(euclidean(start, goal), start)]
@@ -69,8 +71,9 @@ class ThetaStar:
                 if not in_bounds(nb, n) or grid[nb[1], nb[0]] == 1 or nb in closed:
                     continue
                 # Prevent cutting corners between two diagonal obstacles.
-                if self.corner_guard and dx != 0 and dy != 0:
-                    if grid[s[1], s[0] + dx] == 1 and grid[s[1] + dy, s[0]] == 1:
+                if dx != 0 and dy != 0:
+                    side_x, side_y = grid[s[1], s[0] + dx] == 1, grid[s[1] + dy, s[0]] == 1
+                    if (strict and (side_x or side_y)) or (self.corner_guard and side_x and side_y):
                         continue
                 p = parent[s]
                 if line_collision_free(p, nb, grid):

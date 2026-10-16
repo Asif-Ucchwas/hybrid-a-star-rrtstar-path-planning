@@ -5,7 +5,8 @@ for example ``hybrid:base_width=2,max_extra=0`` (a fixed 2-cell corridor).
 
 Names: astar, astar_smooth, theta_star, theta_star_smooth, astar_tight,
 theta_star_tight, rrt_star, informed_rrt_star, rrt_connect, bit_star, hybrid,
-hybrid_fallback, hybrid_tight.
+hybrid_fallback, hybrid_tight, vis_graph (exact shortest path
+through obstacle corners; a reference for length, meant for maps up to ~100x100).
 Optional (pip install ompl): ompl_rrt_star, ompl_informed_rrt_star, ompl_rrt_connect,
 ompl_bit_star. ``ompl_*:time_limit=2.0`` sets the planning budget in seconds.
 """
@@ -14,6 +15,7 @@ import ast
 
 from baselines.astar_family import AStarSmooth, AStarTight, ThetaStar, ThetaStarSmooth, ThetaStarTight
 from baselines.smoothing import tighten_path
+from baselines.visgraph import VisGraphShortest
 from baselines.sampling_family import BITStar, InformedRRTStar, RRTConnect
 from planner_core import HybridAStar, RRTStar
 from planner_core.utils import astar
@@ -65,6 +67,7 @@ REGISTRY = {
     "astar_tight": AStarTight,
     "theta_star_tight": ThetaStarTight,
     "hybrid_tight": HybridTight,
+    "vis_graph": VisGraphShortest,
     "rrt_star": RRTStar,
     "informed_rrt_star": InformedRRTStar,
     "rrt_connect": RRTConnect,
