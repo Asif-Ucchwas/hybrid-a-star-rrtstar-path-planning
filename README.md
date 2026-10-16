@@ -18,6 +18,10 @@
 > changed the conclusion. This README tells the **current, honest version**. The original thesis state is
 > kept as the git tag `v1.0-thesis` and in [`docs/THESIS_README.md`](docs/THESIS_README.md).
 
+<p align="center">
+  <b>1,340</b> planner runs &nbsp;·&nbsp; <b>130</b> maps &nbsp;·&nbsp; <b>7</b> planners &nbsp;·&nbsp; <b>2</b> collision rules &nbsp;·&nbsp; every run seeded &nbsp;·&nbsp; <a href="results/RUN_LOG.md">run log</a> &nbsp;·&nbsp; <a href="docs/DEVLOG.md">dev log</a>
+</p>
+
 ---
 
 ## 🔎 The 30-second version
@@ -161,14 +165,7 @@ describe A\* paths. Doubling the budget removes the fallbacks on random and narr
 
 ---
 
-## ✅ What you can and can't take from this
-
-| You **can** say | You **can't** say |
-|---|---|
-| Hybrid beats A\* with the same smoothing | Hybrid beats Theta\* + tighten |
-| Collision-check rules can change a ranking (here, by a lot) | Adaptive corridors are new or state of the art |
-| All tightened planners are within 4.5% of optimal length on these maps | Real-time, safe, or collision-free in the physical sense |
-| The results reproduce exactly from seeds | The results hold for larger or real maps (untested) |
+## ⚠️ Limits
 
 > [!IMPORTANT]
 > **Limits.** 50×50 grids; 20–30 maps per scenario; one safety margin (0.05 cell); Hybrid's default
