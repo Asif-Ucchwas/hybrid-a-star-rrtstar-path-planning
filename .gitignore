@@ -5,3 +5,9 @@ __pycache__/
 build/
 dist/
 .venv/
+*.log
+results/*/
+!results/summaries/
+*.log
+results/*/
+!results/summaries/
