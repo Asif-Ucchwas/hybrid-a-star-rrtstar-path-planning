@@ -49,16 +49,35 @@ def set_start_goal_free(grid, start, goal):
     grid[goal[1], goal[0]] = 0
 
 
+_T_CACHE = {}
+
+
+def _t_samples(n):
+    """The n sample positions of ``np.linspace(0, 1, n)`` as plain floats."""
+    t = _T_CACHE.get(n)
+    if t is None:
+        t = _T_CACHE[n] = tuple(float(v) for v in np.linspace(0, 1, n))
+    return t
+
+
 def line_collision_free(p1, p2, grid):
-    """Check collision along a line segment using interpolation."""
-    n = max(int(euclidean(p1, p2) * 3), 2)
-    for t in np.linspace(0, 1, n):
-        x = p1[0] + t * (p2[0] - p1[0])
-        y = p1[1] + t * (p2[1] - p1[1])
-        xi, yi = int(round(x)), int(round(y))
-        if not in_bounds((xi, yi), grid.shape[0]):
+    """Check collision along a line segment using interpolation.
+
+    Samples 3 points per cell (at least 2) and rounds each to the nearest
+    cell. Same sample points and same rounding as the original NumPy-based
+    loop, only with the per-call overhead removed, so results are unchanged.
+    """
+    x1, y1 = p1[0], p1[1]
+    dx, dy = p2[0] - x1, p2[1] - y1
+    n = max(int(math.hypot(dx, dy) * 3), 2)
+    n_side = grid.shape[0]
+    item = grid.item
+    for t in _t_samples(n):
+        xi = round(x1 + t * dx)
+        yi = round(y1 + t * dy)
+        if xi < 0 or yi < 0 or xi >= n_side or yi >= n_side:
             return False
-        if grid[yi, xi] == 1:
+        if item(yi, xi) == 1:
             return False
     return True
 
@@ -240,6 +259,12 @@ def rrt_star_generic(grid, start, goal, sampler_fn, sampler_args=None,
         sampler_args = {}
 
     nodes = [Node(start[0], start[1], parent=None, cost=0.0)]
+    # Coordinates mirrored in NumPy arrays so nearest / neighbour searches are
+    # vectorised. Same results as scanning ``nodes`` one by one.
+    cap = max_nodes + max_iterations + 8
+    xs = np.empty(cap)
+    ys = np.empty(cap)
+    xs[0], ys[0] = nodes[0].x, nodes[0].y
     best_goal_idx = None
     best_goal_cost = float("inf")
 
@@ -248,7 +273,8 @@ def rrt_star_generic(grid, start, goal, sampler_fn, sampler_args=None,
             break
 
         rnd = sampler_fn(**sampler_args)
-        nearest_idx = nearest_node(nodes, rnd)
+        d_all = np.hypot(xs[:len(nodes)] - rnd[0], ys[:len(nodes)] - rnd[1])
+        nearest_idx = int(d_all.argmin())
         nearest_pt = nodes[nearest_idx].point()
         new_pt = steer(nearest_pt, rnd, step_size)
 
@@ -260,7 +286,8 @@ def rrt_star_generic(grid, start, goal, sampler_fn, sampler_args=None,
         if not line_collision_free(nearest_pt, new_pt, grid):
             continue
 
-        near_idxs = near_nodes(nodes, new_pt, neighbor_radius)
+        d_new = np.hypot(xs[:len(nodes)] - new_pt[0], ys[:len(nodes)] - new_pt[1])
+        near_idxs = np.flatnonzero(d_new <= neighbor_radius).tolist()
 
         best_parent = nearest_idx
         best_cost = nodes[nearest_idx].cost + euclidean(nearest_pt, new_pt)
@@ -274,6 +301,7 @@ def rrt_star_generic(grid, start, goal, sampler_fn, sampler_args=None,
         new_node = Node(new_pt[0], new_pt[1], parent=best_parent, cost=best_cost)
         nodes.append(new_node)
         new_idx = len(nodes) - 1
+        xs[new_idx], ys[new_idx] = new_node.x, new_node.y
 
         for idx in near_idxs:
             node_pt = nodes[idx].point()
@@ -286,6 +314,7 @@ def rrt_star_generic(grid, start, goal, sampler_fn, sampler_args=None,
             goal_cost = new_node.cost + euclidean(new_pt, goal)
             nodes.append(Node(goal[0], goal[1], parent=new_idx, cost=goal_cost))
             goal_idx = len(nodes) - 1
+            xs[goal_idx], ys[goal_idx] = float(goal[0]), float(goal[1])
             if goal_cost < best_goal_cost:
                 best_goal_cost, best_goal_idx = goal_cost, goal_idx
 
