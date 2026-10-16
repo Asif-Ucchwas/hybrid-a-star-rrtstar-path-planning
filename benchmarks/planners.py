@@ -5,6 +5,8 @@ for example ``hybrid:base_width=2,max_extra=0`` (a fixed 2-cell corridor).
 
 Names: astar, astar_smooth, theta_star, rrt_star, informed_rrt_star,
 rrt_connect, bit_star, hybrid, hybrid_fallback.
+Optional (pip install ompl): ompl_rrt_star, ompl_informed_rrt_star, ompl_rrt_connect,
+ompl_bit_star. ``ompl_*:time_limit=2.0`` sets the planning budget in seconds.
 """
 
 import ast
@@ -58,6 +60,10 @@ REGISTRY = {
 }
 
 
+# Optional reference-library planners (need ``pip install ompl``); see baselines/ompl_adapters.py
+OMPL_KINDS = ("ompl_rrt_star", "ompl_informed_rrt_star", "ompl_rrt_connect", "ompl_bit_star")
+
+
 def parse_spec(spec):
     """Split a spec string into ``(name, kwargs)``."""
     name, _, rest = spec.partition(":")
@@ -72,8 +78,12 @@ def parse_spec(spec):
 
 def make_planner(spec):
     name, kwargs = parse_spec(spec)
+    if name in OMPL_KINDS:
+        from baselines.ompl_adapters import make_ompl
+        return make_ompl(name, **kwargs)
     if name not in REGISTRY:
-        raise ValueError(f"unknown planner {name!r}; choose from {sorted(REGISTRY)}")
+        raise ValueError(f"unknown planner {name!r}; choose from "
+                         f"{sorted(REGISTRY) + sorted(OMPL_KINDS)}")
     return REGISTRY[name](**kwargs)
 
 

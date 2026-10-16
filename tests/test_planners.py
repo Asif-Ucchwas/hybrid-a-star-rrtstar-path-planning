@@ -50,3 +50,22 @@ def test_hybrid_fallback_reports_fallback_when_corridor_search_fails():
     path = planner.plan(start, goal, grid)
     assert path is not None and path_is_valid(path, grid, start, goal)
     assert planner.last_info.get("fallback") is True
+
+
+ompl = pytest.importorskip("ompl", reason="optional: pip install ompl")
+
+
+@pytest.mark.parametrize("name", ["ompl_rrt_star", "ompl_informed_rrt_star",
+                                  "ompl_rrt_connect", "ompl_bit_star"])
+def test_ompl_planners_return_valid_path_on_easy_map(name):
+    grid, start, goal = make_map("random", 30, 2, {"density": 0.10})
+    random.seed(0)
+    path = make_planner(f"{name}:time_limit=0.3").plan(start, goal, grid)
+    assert path is not None, name
+    assert path_is_valid(path, grid, start, goal), name
+
+
+def test_ompl_planner_returns_none_when_no_route():
+    grid, start, goal = make_map("random", 30, 2, {"density": 0.0})
+    grid[:, 15] = 1
+    assert make_planner("ompl_rrt_connect:time_limit=0.1").plan(start, goal, grid) is None

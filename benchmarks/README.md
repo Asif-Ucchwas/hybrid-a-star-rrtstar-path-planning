@@ -75,3 +75,23 @@ clearance (maps where both succeeded), Holm-adjusted per scenario and metric.
 ```bash
 python -m benchmarks.profile_planner hybrid --seed 0
 ```
+
+## Reference-library check (OMPL)
+
+`configs/ompl_check.json` runs our compact sampling baselines next to the same
+algorithms from OMPL (`ompl_rrt_star`, `ompl_informed_rrt_star`, `ompl_rrt_connect`,
+`ompl_bit_star`). Install the optional package first: `pip install -r requirements-ompl.txt`.
+
+```
+python3 -m benchmarks.runner configs/ompl_check.json --workers 1 --out results/ompl_check
+python3 -m benchmarks.analyze results/ompl_check
+```
+
+Rules (details in `baselines/ompl_adapters.py`):
+- OMPL optimising planners run for a fixed time budget (default 1 s, `ompl_rrt_star:time_limit=2.0`
+  to change it). RRT-Connect stops at its first solution. Our own planners run a fixed number of
+  iterations, so compare quality at a similar time, not iteration counts.
+- OMPL's collision check is slightly conservative (0.15 cell margin, 0.1 cell motion step) so it
+  never accepts a segment the benchmark's validity check rejects.
+- OMPL keeps one global random generator per process and cannot be re-seeded per run, so OMPL
+  results are not reproducible run by run. Maps and all other planners are.
