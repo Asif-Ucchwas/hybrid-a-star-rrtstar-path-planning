@@ -1,7 +1,8 @@
-"""Graph-search baselines: A* with smoothing, Theta*."""
+"""Graph-search baselines: A* with smoothing, Theta*, and tightened variants."""
 
 import heapq
 
+from baselines.smoothing import tighten_path
 from planner_core.utils import (
     astar,
     euclidean,
@@ -83,3 +84,44 @@ class ThetaStar:
                     parent[nb] = cand_parent
                     heapq.heappush(open_heap, (cand_g + euclidean(nb, goal), nb))
         return None
+
+
+class ThetaStarSmooth:
+    """Theta* followed by the same random shortcut smoothing RRT* paths get.
+
+    Uses the A*-equivalent movement rules (``corner_guard=0``) so it is the
+    like-for-like partner of ``astar_smooth``.
+    """
+
+    def __init__(self, corner_guard=0, smoothing_attempts=150):
+        self.theta = ThetaStar(corner_guard=corner_guard)
+        self.smoothing_attempts = smoothing_attempts
+
+    def plan(self, start, goal, grid):
+        path = self.theta.plan(start, goal, grid)
+        if path is None:
+            return None
+        return shortcut_path(path, grid, attempts=self.smoothing_attempts)
+
+
+class AStarTight:
+    """A* followed by deterministic path tightening (prune + relax until taut)."""
+
+    def plan(self, start, goal, grid):
+        path = astar(grid, start, goal)
+        if path is None:
+            return None
+        return tighten_path(path, grid)
+
+
+class ThetaStarTight:
+    """Theta* (A*-equivalent movement rules) followed by deterministic tightening."""
+
+    def __init__(self, corner_guard=0):
+        self.theta = ThetaStar(corner_guard=corner_guard)
+
+    def plan(self, start, goal, grid):
+        path = self.theta.plan(start, goal, grid)
+        if path is None:
+            return None
+        return tighten_path(path, grid)

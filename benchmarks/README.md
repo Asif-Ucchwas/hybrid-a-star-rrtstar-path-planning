@@ -33,12 +33,22 @@ continues from the last finished run.
 | `astar_smooth` | A* + the same random-shortcut smoothing RRT* paths get |
 | `theta_star` | Theta* (any-angle A*), refuses diagonal steps between two diagonal obstacles |
 | `theta_star_cc` | Theta* with the same movement rules as `astar` (`theta_star:corner_guard=0`) |
+| `theta_star_smooth` | Theta* (A* movement rules) + the same random-shortcut smoothing |
+| `astar_tight` | A* + deterministic path tightening (prune to line of sight, then slide waypoints taut) |
+| `theta_star_tight` | Theta* (A* movement rules) + the same deterministic tightening |
+| `hybrid_tight` | `hybrid_fallback` + the same deterministic tightening |
 | `rrt_star` | RRT* (the thesis baseline, `planner_core.RRTStar`) |
 | `informed_rrt_star` | Informed RRT* |
 | `rrt_connect` | RRT-Connect (not optimal) |
 | `bit_star` | BIT*, compact re-implementation (see the docstring for the simplification) |
 | `hybrid` | the A*-seeded adaptive-corridor RRT* (`planner_core.HybridAStar`) |
 | `hybrid_fallback` | `hybrid`, falling back to smoothed A* when RRT* fails |
+
+The `*_tight` planners answer one question: does cheap, deterministic
+post-processing of a graph-search path (or of the hybrid path) give the same
+smoothness as the sampling stage? Tightened paths hug obstacle corners, so expect
+lower clearance than their inputs. `configs/paper_smoothing.json` runs them on the
+same 1,300 maps as `paper_main`.
 
 Planner specs in a config can set parameters: `"hybrid:base_width=2,max_extra=0"`
 is a *fixed* 2-cell corridor (the ablation), `"hybrid:max_iterations=600"` changes
