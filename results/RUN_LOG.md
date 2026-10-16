@@ -12,7 +12,7 @@ on the Acer laptop and is not counted here. Do not mix Acer and Legion timings.
 
 | | Runs |
 |---|---:|
-| All runs below | **40,780** |
+| All runs below | **42,320** |
 | Behind the numbers in the README (`decision` + `decision_control`) | **1,340** |
 
 ## Runs behind the current README
@@ -24,6 +24,17 @@ on the Acer laptop and is not counted here. Do not mix Acer and Legion timings.
 
 The commit recorded in `meta.json` for `decision` (`a8224e8`) was rewritten on 16 Oct 2026 when the branch
 authorship was reset. The code is the same as commit `3e6e57f` ("Add an exact collision rule ...").
+
+## Runs added 16 Oct 2026 (RRT* and the other sampling planners)
+
+Same 7-planner idea as `decision`, but the planner list is RRT*, Informed RRT*, RRT-Connect, BIT*, `hybrid`
+(no fallback), `hybrid_fallback` and `theta_star_tight`. Same maps and map seeds as `decision` and
+`decision_control`. `meta.json` records commit `02591d5`. 1 worker, clean timing.
+
+| Folder | Config | Collision rule | Runs | Notes |
+|---|---|---|---:|---|
+| `results/decision_rrt/` | `decision_rrt.json` | exact, margin 0.05 | **910** | 7 planners on 130 maps. Re-tests the thesis RRT* comparison under the exact rule. |
+| `results/decision_rrt_control/` | `decision_rrt_control.json` | sampled (thesis rule) | **630** | 7 planners on the 90 random maps. |
 
 ## Earlier runs (sampled collision rule, not used for the README numbers)
 
