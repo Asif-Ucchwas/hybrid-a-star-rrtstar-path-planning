@@ -1,0 +1,33 @@
+{
+  "name": "ml_big_ref",
+  "collision": "exact",
+  "margin": 0.05,
+  "description": "Stage 5C reference: exact shortest path (vis_graph) on the same 100x100 maps as ml_big.json. Slow (minutes per map at density 0.30) and only used for length, so it runs with many workers; its timing is not reported.",
+  "scenarios": [
+    {
+      "id": "big_d0.20",
+      "family": "random",
+      "kind": "random",
+      "size": 100,
+      "params": {
+        "density": 0.2
+      },
+      "seeds": 50,
+      "x": 0.2
+    },
+    {
+      "id": "big_d0.30",
+      "family": "random",
+      "kind": "random",
+      "size": 100,
+      "params": {
+        "density": 0.3
+      },
+      "seeds": 50,
+      "x": 0.3
+    }
+  ],
+  "planners": [
+    "vis_graph"
+  ]
+}

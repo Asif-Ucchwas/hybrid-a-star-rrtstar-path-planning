@@ -1,0 +1,43 @@
+{
+  "name": "ml_big",
+  "collision": "exact",
+  "margin": 0.05,
+  "description": "Stage 5C. 100x100 maps, 4x the area of anything the network trained on (it trained on 50x50 only). x4 = four times the iteration and node budget, matching the area. Map seeds 0-49. Run with --workers 1. Exact shortest paths for these maps come from ml_big_ref.json.",
+  "scenarios": [
+    {
+      "id": "big_d0.20",
+      "family": "random",
+      "kind": "random",
+      "size": 100,
+      "params": {
+        "density": 0.2
+      },
+      "seeds": 50,
+      "x": 0.2
+    },
+    {
+      "id": "big_d0.30",
+      "family": "random",
+      "kind": "random",
+      "size": 100,
+      "params": {
+        "density": 0.3
+      },
+      "seeds": 50,
+      "x": 0.3
+    }
+  ],
+  "planners": [
+    "theta_star_tight",
+    "hybrid_tight",
+    {
+      "id": "hybrid_tight_x4",
+      "spec": "hybrid_tight:max_iterations=7200,max_nodes=10000"
+    },
+    "learned_tight",
+    {
+      "id": "learned_tight_x4",
+      "spec": "learned_tight:max_iterations=7200,max_nodes=10000"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "name": "ml_main",
+  "collision": "exact",
+  "margin": 0.05,
+  "description": "Stage 5A. Learned planners vs the thesis Hybrid and Theta* + tighten on 50x50 test maps, exact rule with 0.05 margin (same as decision.json, with more maps). Map seeds 0-99 (0-29 are the decision.json maps); the network trained only on seeds >= 100000. Mazes are a map family the network never saw. x2 = twice the iteration and node budget. vis_graph is the exact shortest path (reference; not run on mazes). Run with --workers 1 for clean timing.",
+  "scenarios": [
+    {
+      "id": "random_d0.10",
+      "family": "random",
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.1
+      },
+      "seeds": 100,
+      "x": 0.1
+    },
+    {
+      "id": "random_d0.20",
+      "family": "random",
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.2
+      },
+      "seeds": 100,
+      "x": 0.2
+    },
+    {
+      "id": "random_d0.30",
+      "family": "random",
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.3
+      },
+      "seeds": 100,
+      "x": 0.3
+    },
+    {
+      "id": "narrow",
+      "family": "narrow",
+      "kind": "narrow",
+      "size": 50,
+      "params": {},
+      "seeds": 100
+    },
+    {
+      "id": "maze",
+      "family": "maze",
+      "kind": "maze",
+      "size": 50,
+      "params": {},
+      "seeds": 50,
+      "planners": [
+        "theta_star_tight",
+        "hybrid_fallback",
+        "hybrid_tight",
+        {
+          "id": "hybrid_tight_x2",
+          "spec": "hybrid_tight:max_iterations=3600,max_nodes=5000"
+        },
+        "learned_corridor",
+        "learned_tight",
+        {
+          "id": "learned_tight_x2",
+          "spec": "learned_tight:max_iterations=3600,max_nodes=5000"
+        }
+      ]
+    }
+  ],
+  "planners": [
+    "theta_star_tight",
+    "hybrid_fallback",
+    "hybrid_tight",
+    {
+      "id": "hybrid_tight_x2",
+      "spec": "hybrid_tight:max_iterations=3600,max_nodes=5000"
+    },
+    "learned_corridor",
+    "learned_tight",
+    {
+      "id": "learned_tight_x2",
+      "spec": "learned_tight:max_iterations=3600,max_nodes=5000"
+    },
+    "vis_graph"
+  ]
+}

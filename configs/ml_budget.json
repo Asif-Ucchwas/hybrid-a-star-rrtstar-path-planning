@@ -1,0 +1,100 @@
+{
+  "name": "ml_budget",
+  "collision": "exact",
+  "margin": 0.05,
+  "description": "Stage 5B. Raw search success against budget, NO fallback and NO tightening: plain RRT*, the thesis corridor RRT* (hybrid) and the heatmap RRT* (learned_corridor:fallback=False) at 300-3600 iterations (node cap scaled with the thesis ratio 2500/1800). Answers: does the learned corridor reach the same success with a smaller budget (= less time)? Map seeds 0-99. Run with --workers 1.",
+  "scenarios": [
+    {
+      "id": "random_d0.20",
+      "family": "random",
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.2
+      },
+      "seeds": 100,
+      "x": 0.2
+    },
+    {
+      "id": "random_d0.30",
+      "family": "random",
+      "kind": "random",
+      "size": 50,
+      "params": {
+        "density": 0.3
+      },
+      "seeds": 100,
+      "x": 0.3
+    },
+    {
+      "id": "narrow",
+      "family": "narrow",
+      "kind": "narrow",
+      "size": 50,
+      "params": {},
+      "seeds": 100
+    }
+  ],
+  "planners": [
+    {
+      "id": "rrt_star@300",
+      "spec": "rrt_star:max_iterations=300,max_nodes=417"
+    },
+    {
+      "id": "rrt_star@600",
+      "spec": "rrt_star:max_iterations=600,max_nodes=833"
+    },
+    {
+      "id": "rrt_star@1200",
+      "spec": "rrt_star:max_iterations=1200,max_nodes=1667"
+    },
+    {
+      "id": "rrt_star@1800",
+      "spec": "rrt_star:max_iterations=1800,max_nodes=2500"
+    },
+    {
+      "id": "rrt_star@3600",
+      "spec": "rrt_star:max_iterations=3600,max_nodes=5000"
+    },
+    {
+      "id": "hybrid@300",
+      "spec": "hybrid:max_iterations=300,max_nodes=417"
+    },
+    {
+      "id": "hybrid@600",
+      "spec": "hybrid:max_iterations=600,max_nodes=833"
+    },
+    {
+      "id": "hybrid@1200",
+      "spec": "hybrid:max_iterations=1200,max_nodes=1667"
+    },
+    {
+      "id": "hybrid@1800",
+      "spec": "hybrid:max_iterations=1800,max_nodes=2500"
+    },
+    {
+      "id": "hybrid@3600",
+      "spec": "hybrid:max_iterations=3600,max_nodes=5000"
+    },
+    {
+      "id": "learned@300",
+      "spec": "learned_corridor:fallback=False,max_iterations=300,max_nodes=417"
+    },
+    {
+      "id": "learned@600",
+      "spec": "learned_corridor:fallback=False,max_iterations=600,max_nodes=833"
+    },
+    {
+      "id": "learned@1200",
+      "spec": "learned_corridor:fallback=False,max_iterations=1200,max_nodes=1667"
+    },
+    {
+      "id": "learned@1800",
+      "spec": "learned_corridor:fallback=False,max_iterations=1800,max_nodes=2500"
+    },
+    {
+      "id": "learned@3600",
+      "spec": "learned_corridor:fallback=False,max_iterations=3600,max_nodes=5000"
+    }
+  ]
+}
