@@ -19,7 +19,7 @@
 > kept as the git tag `v1.0-thesis` and in [`docs/THESIS_README.md`](docs/THESIS_README.md).
 
 <p align="center">
-  <b>43,420</b> planner runs in total (<b>3,980</b> behind the numbers on this page) &nbsp;·&nbsp; <b>130</b> maps &nbsp;·&nbsp; <b>7</b> planners &nbsp;·&nbsp; <b>2</b> collision rules &nbsp;·&nbsp; every run seeded &nbsp;·&nbsp; <a href="results/RUN_LOG.md">run log</a> &nbsp;·&nbsp; <a href="docs/DEVLOG.md">dev log</a>
+  <b>52,070</b> planner runs in total (<b>12,630</b> behind the numbers on this page) &nbsp;·&nbsp; <b>130</b> maps &nbsp;·&nbsp; <b>7</b> planners &nbsp;·&nbsp; <b>2</b> collision rules &nbsp;·&nbsp; every run seeded &nbsp;·&nbsp; <a href="results/RUN_LOG.md">run log</a> &nbsp;·&nbsp; <a href="docs/DEVLOG.md">dev log</a>
 </p>
 
 ---
@@ -35,6 +35,7 @@
 | 🌲 | **Plain RRT\* fails often under the exact rule; the corridor helps at equal budget** | 130 maps solved: RRT\* 49 (74 at 2× budget), Hybrid without fallback 100 (122), Theta\* + tighten 128 |
 | 🧪 | **The old collision check flattered corner-cutting planners** | 73–100% of old-rule paths clipped an obstacle |
 | 🎯 | **Tightened planners are already close to the best possible path** | within 4.5% of the exact shortest path |
+| 🧠 | **A learned corridor (U-Net) gives slightly shorter paths, but no speed-up and no generalization** | 0.2–0.7% shorter than Hybrid on trained map types; 84% A\* fallback on unseen mazes ([details](#-ml-extension-can-a-network-draw-a-better-corridor)) |
 
 **So:** the corridor idea works, but it is *not* a clear win over simple, well-known baselines on these maps.
 The repository is now best used as a **reproducible benchmark** — 15 planner variants, seeded maps, an exact
@@ -188,6 +189,59 @@ exact rule. Hybrid ×2 takes 0.8–2.0 s per plan against about 0.02 s for Theta
 
 ---
 
+## 🧠 ML extension: can a network draw a better corridor?
+
+*Added Nov 2026, branch `ml-corridor`. Code and pipeline: [`ml/`](ml/). Full tables: [`results/summaries/ml_stage5_report.md`](results/summaries/ml_stage5_report.md).*
+
+The thesis planner samples inside a corridor drawn around an **A\* route**. Here a small **U-Net** (1.9 M
+parameters) looks at the map, the start and the goal and predicts, for every cell, the chance that the **exact
+shortest path** runs through it. RRT\* then samples 70% from that heatmap, 20% anywhere in free space (so a gap
+in the heatmap cannot trap it) and 10% at the goal — same RRT\* engine, same budget, same A\* fallback.
+
+<p align="center"><img src="assets/readme/ml_predictions.png" alt="Exact shortest paths (top) and network predictions (bottom) on validation maps" width="100%"></p>
+
+*Validation maps the network never trained on: exact shortest path (top) and prediction (bottom).*
+
+**Setup.** 99,269 training maps (random and narrow, 50×50, map seeds ≥ 100000, so no benchmark map is ever
+seen in training; mazes left out on purpose) labelled with `vis_graph`. 40 epochs on an RTX 5080 (7 min).
+On 4,963 held-out maps the predicted corridor keeps 96% of the true path cells and connects start and goal on
+93% of maps while covering 9.4% of the free space. Then **8,650 benchmark runs**, one worker; the network runs
+on one CPU thread and its time is counted.
+
+| 50×50 test maps (100 per type, 50 mazes) | random 0.10 | random 0.20 | random 0.30 | narrow | maze *(unseen type)* |
+|---|---:|---:|---:|---:|---:|
+| above the exact shortest path — `learned_tight` | **+0.16%** | **+0.92%** | **+3.21%** | **+1.38%** | — |
+| above the exact shortest path — `hybrid_tight` | +0.48% | +1.66% | +3.41% | +1.64% | — |
+| above the exact shortest path — `theta_star_tight` | +1.10% | +2.72% | +3.97% | +2.19% | — |
+| A\* fallback — learned / hybrid | 0% / 0% | 3% / 4% | 56% / 51% | 22% / 14% | **84% / 44%** |
+| median time — learned / hybrid / Theta\* + tighten | 575 / 494 / 12 ms | 368 / 294 / 15 ms | 197 / 145 / 18 ms | 288 / 259 / 36 ms | 107 / 158 / 20 ms |
+
+**What it shows**
+
+1. **Slightly shorter paths on the map types it trained on.** `learned_tight` is 0.2–0.7% shorter than
+   `hybrid_tight` (paired Wilcoxon, Holm: significant on random 0.10, 0.20 and narrow; not at 0.30) and
+   0.6–1.8% shorter than Theta\* + tighten (significant on all four). A likely reason: the network learned
+   any-angle exact paths, while the thesis corridor follows an 8-connected A\* route that sometimes passes an
+   obstacle on the other side.
+2. **No budget saving.** Without fallback, the learned corridor needs the same search budget as the A\*
+   corridor on random 0.20 maps (both 80% solved at 1200 iterations, 96% at 1800) and slightly more on
+   random 0.30 (43% vs 57% at 1800) and narrow maps. It is 20–36% slower than Hybrid at the default budget,
+   and Theta\* + tighten stays 10–40× faster than either.
+3. **No generalization.** On mazes, a map type it never saw, it falls back to A\* in 84% of runs (Hybrid 44%).
+   On 100×100 maps at 4× the budget it is clearly worse than Hybrid: +12.0% above the shortest path vs +1.3%
+   at density 0.20, and 92% vs 36% fallbacks at 0.30. Each output cell can see at most 50 cells in each
+   direction, so on a 100×100 map the cells near one end never see the other end of the route, and the network
+   never trained on routes that long.
+
+<p align="center"><img src="assets/readme/ml_budget.png" alt="Raw success and time against search budget" width="100%"></p>
+
+**So:** a learned corridor gives small but statistically real path-length gains inside its training
+distribution, costs time, and does not transfer to new map types or larger maps. The A\* corridor is already a
+strong guide on these maps. **Limits:** one network and one training seed, 50×50 training maps only, the 20%
+uniform share was not tuned, CPU inference on one thread, 100 maps per type (50 for mazes and per 100×100 density).
+
+---
+
 ## 🚀 Reproduce everything
 
 ```bash
@@ -228,6 +282,7 @@ are committed in [`results/summaries/`](results/summaries/). A one-minute smoke 
 | `vis_graph` | exact shortest path through obstacle corners (a length reference) |
 | `rrt_star`, `informed_rrt_star`, `rrt_connect`, `bit_star` | sampling-based baselines |
 | `ompl_*` | OMPL reference implementations (optional install) |
+| `learned_corridor`, `learned_tight` | RRT\* sampling from a trained U-Net heatmap (needs PyTorch, see [`ml/`](ml/)) |
 
 Details, metrics and statistics: [`benchmarks/README.md`](benchmarks/README.md).
 </details>
@@ -243,6 +298,7 @@ benchmarks/        map generators, runner, metrics, statistics
 configs/           the experiment definitions (decision.json is the one behind this README)
 results/summaries/ the committed result tables and CSV behind the charts
 assets/readme/     the charts above (regenerated by scripts/)
+ml/                learned corridor: dataset, U-Net training, learned planners, Stage 5 benchmark
 ros2_integration/  standalone ROS2 nodes for A*, RRT* and Hybrid, plus a Kalman filter node
 src/               thin compatibility wrappers plus the original thesis scripts (demo, 50-trial benchmark)
 paper_figures/     the original thesis figures

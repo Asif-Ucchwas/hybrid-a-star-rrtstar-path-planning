@@ -2,6 +2,20 @@
 
 Newest first. Plain notes on what changed and what we learned. Numbers come from [`results/RUN_LOG.md`](../results/RUN_LOG.md).
 
+## 2026-11-21: ML extension — a learned corridor (branch `ml-corridor`)
+
+- Dataset: 99,269 seeded 50x50 maps (random + narrow, seeds 100000+) labelled with the exact shortest path;
+  2 h 54 min on 18 workers of the Legion. Mazes held out.
+- U-Net (1.93 M parameters) predicts the shortest-path cells from obstacles + start + goal. 40 epochs, 7 min on
+  the RTX 5080. Held-out: coverage 0.96, start-goal connected 0.93, corridor 9.4% of free cells.
+- New planners `learned_corridor` / `learned_tight`: thesis RRT\* engine and budget, samples 70% heatmap /
+  20% uniform / 10% goal, same A\* fallback. Network on one CPU thread, time counted.
+- Stage 5: 8,650 runs (`ml_main`, `ml_budget`, `ml_big`, `ml_big_ref`), 1 h 16 min.
+- **Finding:** 0.2-0.7% shorter than `hybrid_tight` (significant on 3 of 4 trained map types) and 0.6-1.8%
+  shorter than Theta\* + tighten, but 20-36% slower than Hybrid, no lower budget needed, and no
+  generalization: 84% fallback on unseen mazes (Hybrid 44%) and clearly worse on 100x100 maps.
+- Not a new speed or reliability claim; a documented negative-leaning result with a small length gain.
+
 ## 2026-10-16 (later): plain RRT* under both rules, two budgets
 
 - Added `decision_rrt`, `decision_rrt_control` (default budget) and `decision_rrt_budget`,
