@@ -9,6 +9,8 @@ hybrid_fallback, hybrid_tight, vis_graph (exact shortest path
 through obstacle corners; a reference for length, meant for maps up to ~100x100).
 Optional (pip install ompl): ompl_rrt_star, ompl_informed_rrt_star, ompl_rrt_connect,
 ompl_bit_star. ``ompl_*:time_limit=2.0`` sets the planning budget in seconds.
+Optional (needs PyTorch, see ml/): learned_corridor, learned_tight (RRT* guided by
+a trained U-Net heatmap; ``ml/learned_planner.py``).
 """
 
 import ast
@@ -80,6 +82,9 @@ REGISTRY = {
 # Optional reference-library planners (need ``pip install ompl``); see baselines/ompl_adapters.py
 OMPL_KINDS = ("ompl_rrt_star", "ompl_informed_rrt_star", "ompl_rrt_connect", "ompl_bit_star")
 
+# Optional learned planners (need PyTorch); see ml/learned_planner.py
+ML_KINDS = ("learned_corridor", "learned_tight")
+
 
 def parse_spec(spec):
     """Split a spec string into ``(name, kwargs)``."""
@@ -98,9 +103,12 @@ def make_planner(spec):
     if name in OMPL_KINDS:
         from baselines.ompl_adapters import make_ompl
         return make_ompl(name, **kwargs)
+    if name in ML_KINDS:
+        from ml.learned_planner import make_learned
+        return make_learned(name, **kwargs)
     if name not in REGISTRY:
         raise ValueError(f"unknown planner {name!r}; choose from "
-                         f"{sorted(REGISTRY) + sorted(OMPL_KINDS)}")
+                         f"{sorted(REGISTRY) + sorted(OMPL_KINDS) + sorted(ML_KINDS)}")
     return REGISTRY[name](**kwargs)
 
 
