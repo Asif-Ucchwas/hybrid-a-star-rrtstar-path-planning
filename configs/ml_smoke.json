@@ -1,0 +1,11 @@
+{
+  "name": "ml_smoke",
+  "description": "Quick check of the learned planners against Hybrid and Theta* + tighten under the exact rule (0.05 margin). 10 maps per density, map seeds 0-9 (the decision.json test maps; the network never trained on them).",
+  "collision": "exact",
+  "margin": 0.05,
+  "scenarios": [
+    {"id": "random_d0.20", "family": "random", "x": 0.2, "kind": "random", "size": 50, "params": {"density": 0.2}, "seeds": 10},
+    {"id": "random_d0.30", "family": "random", "x": 0.3, "kind": "random", "size": 50, "params": {"density": 0.3}, "seeds": 10}
+  ],
+  "planners": ["theta_star_tight", "hybrid_fallback", "hybrid_tight", "learned_corridor", "learned_tight"]
+}

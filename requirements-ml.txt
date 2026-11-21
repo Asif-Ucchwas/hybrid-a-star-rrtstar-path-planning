@@ -1,0 +1,4 @@
+# Optional, only for ml/ (learned corridor). Install PyTorch with CUDA first; RTX 50-series needs CUDA 12.8+:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+torch
+tensorboard

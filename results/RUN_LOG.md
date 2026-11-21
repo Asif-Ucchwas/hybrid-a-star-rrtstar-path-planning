@@ -12,8 +12,8 @@ on the Acer laptop and is not counted here. Do not mix Acer and Legion timings.
 
 | | Runs |
 |---|---:|
-| All runs below | **43,420** |
-| Behind the numbers in the README (`decision` + `decision_control`) | **1,340** |
+| All runs below | **52,070** |
+| Behind the numbers in the README (`decision*` rows + the 8,650 ML rows) | **12,630** |
 
 ## Runs behind the current README
 
@@ -24,6 +24,21 @@ on the Acer laptop and is not counted here. Do not mix Acer and Legion timings.
 
 The commit recorded in `meta.json` for `decision` (`a8224e8`) was rewritten on 16 Oct 2026 when the branch
 authorship was reset. The code is the same as commit `3e6e57f` ("Add an exact collision rule ...").
+
+## Runs added 21 Nov 2026 (ML extension, branch `ml-corridor`)
+
+Learned corridor planners (`learned_corridor`, `learned_tight`, model `ml/models/unet_v1.pt`) against the thesis
+planner, Theta\* + tighten and plain RRT\*. Exact rule, margin 0.05. Started 15:54, finished 17:10
+(`ml/run_stage5.sh`). Tables: [`summaries/ml_stage5_report.md`](summaries/ml_stage5_report.md).
+
+| Folder | Config | Collision rule | Runs | Notes |
+|---|---|---|---:|---|
+| `results/ml_main/` | `ml_main.json` | exact, margin 0.05 | **3,550** | 8 planners on 450 maps (random d0.10/0.20/0.30 x 100, narrow x 100, maze x 50; map seeds 0-99, 0-29 = `decision` maps). 1 worker, clean timing. |
+| `results/ml_budget/` | `ml_budget.json` | exact, margin 0.05 | **4,500** | `rrt_star`, `hybrid`, `learned_corridor` (no fallback, no tightening) at 300/600/1200/1800/3600 iterations on 300 maps. 1 worker. |
+| `results/ml_big/` | `ml_big.json` | exact, margin 0.05 | **500** | 5 planners on 100 maps of 100x100 (d0.20/0.30 x 50). 1 worker. |
+| `results/ml_big_ref/` | `ml_big_ref.json` | exact, margin 0.05 | **100** | `vis_graph` on the same 100x100 maps, length reference only (18 workers, timing not used). |
+
+Not counted as benchmark runs: the training data (99,269 `vis_graph` paths on seeds 100000+, `ml/make_dataset.py`).
 
 ## Runs added 16 Oct 2026 (RRT* and the other sampling planners)
 

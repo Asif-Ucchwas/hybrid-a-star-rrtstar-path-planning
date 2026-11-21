@@ -11,3 +11,5 @@ results/*/
 *.log
 results/*/
 !results/summaries/
+data/
+runs/
